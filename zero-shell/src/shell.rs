@@ -22,17 +22,15 @@ impl Shell {
             match io::stdin().read_line(&mut input) {
                 Ok(0) => {
                     println!();
-                    println!("Goodbye!");
+                    println!("Goodbye mate!");
                     break;
                 }
                 Ok(_) => {
                     let input = input.trim();
                     if !input.is_empty() {
-                        // COMMIT 3: Task - Execute parsed commands
                         self.execute_command(input);
                     }
                 }
-                // COMMIT 2: Task - Handle input errors
                 Err(error) => {
                     eprintln!("Error reading input: {}", error);
                 }
