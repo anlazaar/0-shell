@@ -1,4 +1,5 @@
-use std::env;
+use std::{ env };
+use std::fs::{ self, DirEntry };
 
 pub fn echo(args: &[String]) {
     if args.len() == 0 {
@@ -38,4 +39,39 @@ pub fn cd(args: &[String]) {
     if let Err(_) = env::set_current_dir(&path) {
         println!("cd: -- {} -- No sucha file or dir", path);
     }
+}
+
+pub fn ls(_args: &[String]) {
+    let mut paths = Vec::new(); // Will hold the dir to list [NOT IMPLIMENTED YET]
+
+    if paths.len() == 0 {
+        paths.push(".".to_string());
+    }
+
+    for path in paths {
+        list_dir(&path);
+    }
+}
+
+fn list_dir(path: &str) {
+    let dir = match fs::read_dir(path) {
+        Ok(dir) => dir,
+        Err(_) => {
+            println!("Error Listing the directory.");
+            return;
+        }
+    };
+
+    let mut content: Vec<DirEntry> = Vec::new();
+
+    for c in dir {
+        if let Ok(file_or_dir) = c {
+            content.push(file_or_dir);
+        }
+    }
+
+    // sort the content
+    content.sort_by(|a, b| a.file_name().cmp(&b.file_name()));
+
+    println!("{:?}", content);
 }
