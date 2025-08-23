@@ -1,6 +1,6 @@
 mod builtin;
 
-use builtin::{ echo };
+use builtin::{ echo, pwd, cd };
 use std::collections::HashMap;
 
 pub struct CommandExecutor {
@@ -12,7 +12,12 @@ impl CommandExecutor {
         // next this will be mut for insert [command <-> Fn]
         let mut commands: HashMap<String, Box<dyn Fn(&[String])>> = HashMap::new();
 
+        // echo
         commands.insert("echo".to_string(), Box::new(echo));
+        // pwd
+        commands.insert("pwd".to_string(), Box::new(pwd));
+        // cd
+        commands.insert("cd".to_string(), Box::new(cd));
 
         // Thinking of making a HashMap that containes every command with it's function >>> like handleFunc or a Multiplexere
         CommandExecutor { commands }
