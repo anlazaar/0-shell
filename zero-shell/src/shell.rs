@@ -1,4 +1,4 @@
-use std::io::{self};
+use std::io::{ self };
 
 use crate::commands::CommandExecutor;
 use crate::utils::parse_command;
@@ -22,19 +22,19 @@ impl Shell {
             match io::stdin().read_line(&mut input) {
                 Ok(0) => {
                     println!();
-                    println!("Goodby hoomie!");
+                    println!("Goodbye!");
                     break;
                 }
                 Ok(_) => {
                     let input = input.trim();
-                    // execute the command if it's not empty >>> CommandExecuter
-                    if input != "" {
+                    if !input.is_empty() {
+                        // COMMIT 3: Task - Execute parsed commands
                         self.execute_command(input);
                     }
-                    println!("Your input is: {}", input);
                 }
+                // COMMIT 2: Task - Handle input errors
                 Err(error) => {
-                    println!("Error reading input: {:?}", error);
+                    eprintln!("Error reading input: {}", error);
                 }
             }
         }
