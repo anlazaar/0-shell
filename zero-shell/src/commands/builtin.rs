@@ -2,6 +2,7 @@ use std::time::SystemTime;
 use std::os::unix::fs::PermissionsExt;
 use std::{ env };
 use std::fs::{ self, DirEntry };
+use crate::utils::human_readable;
 
 pub fn echo(args: &[String]) {
     if args.len() == 0 {
@@ -163,10 +164,10 @@ fn print_long_format(c: &DirEntry) {
     let datetime = format_time(modified);
 
     println!(
-        "{}{} 1 root root {:^8} {} {}",
+        "{}{} 1 root root {:^10} {} {}", // root root need actually to be real user and group names using libc to get them later
         file_type,
         permissions,
-        size,
+        human_readable(size), // formated size from raw bytes to readable size [B, K, M, G]
         datetime,
         c.file_name().to_string_lossy()
     );
