@@ -27,8 +27,9 @@ Track what’s done, what’s pending, and what’s next.
 
 - [x] **Commit 4: echo**
 - [x] **Commit 5: pwd + cd**
-- [ ] **Commit 6: ls (basic)**
-- [ ] **Commit 7: ls flags (-l, -a, -F)**
+- [docs] [https://doc.rust-lang.org/std/fs/struct.Metadata.html]
+- [x] **Commit 6: ls (basic)**
+- [x] **Commit 7: ls flags (-l, -a, -F)**
 - [ ] **Commit 8: cat**
 - [ ] **Commit 9: cp + mv**
 - [ ] **Commit 10: mkdir + rm + touch**
