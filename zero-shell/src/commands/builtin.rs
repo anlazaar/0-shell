@@ -1,11 +1,10 @@
-use libc::tolower;
-
 use crate::helpers::{format_permissions, format_time, gid_to_groupname, uid_to_username};
 use crate::utils::human_readable;
 use std::env;
 use std::fs::{self, DirEntry};
 use std::os::unix::fs::MetadataExt;
 use std::os::unix::fs::PermissionsExt;
+use std::path::Path;
 use std::time::SystemTime;
 
 pub fn echo(args: &[String]) {
@@ -113,8 +112,6 @@ fn list_dir(path: &str, a_flag: bool, l_flag: bool, f_flag: bool) {
                 let file_name = c.file_name();
                 let name = file_name.to_string_lossy();
                 if !name.starts_with('.') || a_flag {
-                    println!("handing {}, with {}", name, metadata.len());
-
                     total_blocks += (metadata.len() / 4096) * 4; // metadata.len() is the file size in bytes
                     if metadata.len() % 4096 != 0 {
                         total_blocks += 4; // metadata.len() is the file size in bytes
@@ -201,8 +198,51 @@ pub fn mkdir(args: &[String]) {
 
     for dir in args {
         // need to check if the dir is already exist and handle it's bo7do:(
-        if let Err(_) = fs::create_dir(dir) {
+        if Path::new(dir).exists() {
+            println!("mkdir: cannot creat directory '{}': Already exists", dir);
+        } else if let Err(_) = fs::create_dir(dir) {
             println!("mkdir: cannot creat directory '{}': Permission denied", dir);
+        }
+    }
+}
+
+pub fn rm(args: &[String]) {
+    if args.len() == 0 {
+        println!("rm: MIssing arguments");
+        return;
+    }
+
+    let mut r_flag = false;
+    let mut files = Vec::new();
+
+    for arg in args {
+        if arg == "-r" || arg == "-R" {
+            r_flag = true;
+        } else {
+            files.push(arg);
+        }
+    }
+
+    for file in files {
+        let path = Path::new(file);
+
+        if !path.exists() {
+            eprintln!("rm: cannot remove '{}': No such file or directory", file);
+            continue;
+        }
+
+        if path.is_dir() {
+            if r_flag {
+                if let Err(_) = fs::remove_dir_all(path) {
+                    println!("rm: cannot remove '{}': Directory not empty", file);
+                }
+            } else {
+                println!("rm: cannot remove '{}': Is a directory", file);
+            }
+        } else {
+            if let Err(_) = fs::remove_file(path) {
+                println!("rm: cannot remove '{}': Permission Denied", file);
+            }
         }
     }
 }
