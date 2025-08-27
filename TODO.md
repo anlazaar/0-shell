@@ -60,5 +60,4 @@ Track what’s done, what’s pending, and what’s next.
 - [ ] Unix-like behavior & error messages
 - [ ] Clean, well-documented code
 - [ ] Comprehensive test coverage
-- [ ] No external dependencies
 - [ ] Proper Git history with meaningful commits

@@ -197,3 +197,44 @@ pub fn mkdir(args: &[String]) {
         }
     }
 }
+
+pub fn rm(args: &[String]) {
+    if args.len() == 0 {
+        println!("rm: MIssing arguments");
+        return;
+    }
+
+    let mut r_flag = false;
+    let mut files = Vec::new();
+
+    for arg in args {
+        if arg == "-r" || arg == "-R" {
+            r_flag = true;
+        } else {
+            files.push(arg);
+        }
+    }
+
+    for file in files {
+        let path = Path::new(file);
+
+        if !path.exists() {
+            eprintln!("rm: cannot remove '{}': No such file or directory", file);
+            continue;
+        }
+
+        if path.is_dir() {
+            if r_flag {
+                if let Err(_) = fs::remove_dir_all(path) {
+                    println!("rm: cannot remove '{}': Directory not empty", file);
+                }
+            } else {
+                println!("rm: cannot remove '{}': Is a directory", file);
+            }
+        } else {
+            if let Err(_) = fs::remove_file(path) {
+                println!("rm: cannot remove '{}': Permission Denied", file);
+            }
+        }
+    }
+}
