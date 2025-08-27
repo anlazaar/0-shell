@@ -1,8 +1,12 @@
+use std::ffi::CStr;
 use std::time::SystemTime;
 use std::os::unix::fs::PermissionsExt;
 use std::{ env };
 use std::fs::{ self, DirEntry };
+use std::os::unix::fs::MetadataExt;
 use crate::utils::human_readable;
+use libc::{ getpwuid, getgrgid };
+use chrono::{ DateTime, Local };
 
 pub fn echo(args: &[String]) {
     if args.len() == 0 {
@@ -162,15 +166,43 @@ fn print_long_format(c: &DirEntry) {
     let size = metadata.len();
     let modified = metadata.modified().unwrap_or(SystemTime::UNIX_EPOCH);
     let datetime = format_time(modified);
+    let username = uid_to_username(metadata.uid());
+    let groupname = gid_to_groupname(metadata.gid());
+    let nlink = metadata.nlink();
 
     println!(
-        "{}{} 1 root root {:^10} {} {}", // root root need actually to be real user and group names using libc to get them later
+        "{}{} {} {} {} {:^10} {} {}", // root root need actually to be real user and group names using libc to get them later
         file_type,
         permissions,
+        nlink,
+        username,
+        groupname,
         human_readable(size), // formated size from raw bytes to readable size [B, K, M, G]
         datetime,
         c.file_name().to_string_lossy()
     );
+}
+
+fn uid_to_username(uid: u32) -> String {
+    unsafe {
+        let passwd = getpwuid(uid);
+        if passwd.is_null() {
+            return uid.to_string();
+        }
+        let name = CStr::from_ptr((*passwd).pw_name);
+        name.to_string_lossy().into_owned()
+    }
+}
+
+fn gid_to_groupname(uid: u32) -> String {
+    unsafe {
+        let passwd = getgrgid(uid);
+        if passwd.is_null() {
+            return uid.to_string();
+        }
+        let name = CStr::from_ptr((*passwd).gr_name);
+        name.to_string_lossy().into_owned()
+    }
 }
 
 fn format_permissions(mode: u32) -> String {
@@ -204,11 +236,9 @@ fn format_permissions(mode: u32) -> String {
     perms
 }
 
-// Needs to be done >>> [in queue] still using static return value
+// Done using chrono.
 fn format_time(time: SystemTime) -> String {
-    use std::time::UNIX_EPOCH;
-    let duration = time.duration_since(UNIX_EPOCH).unwrap();
-    let _secs = duration.as_secs();
-
-    format!("Feb 5 09:21")
+    let datetime: DateTime<Local> = time.into(); // convert to local time
+    // soo the datetime looks like: 2025-08-27 16:19:23.606228703 +01:00 => using format!() we make it look like Feb 27 09:21
+    datetime.format("%b %e %H:%M").to_string()
 }

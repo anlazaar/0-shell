@@ -30,8 +30,8 @@ Track what’s done, what’s pending, and what’s next.
 - [docs] [https://doc.rust-lang.org/std/fs/struct.Metadata.html]
 - [x] **Commit 6: ls (basic)**
 - [x] **Commit 7: ls flags (-l, -a, -F)**
-- [ ] **Commit 8: cat**
-- [ ] **Commit 9: cp + mv**
+- [ ] **Commit 8: cat**   [amine]
+- [ ] **Commit 9: cp + mv**   [amine]
 - [ ] **Commit 10: mkdir + rm + touch**
 
 ---
