@@ -1,6 +1,7 @@
 use std::os::unix::fs::PermissionsExt;
 use std::time::SystemTime;
 use std::{ env };
+use std::path::Path;
 use std::fs::{ self, DirEntry };
 use std::os::unix::fs::MetadataExt;
 use crate::utils::human_readable;
@@ -189,7 +190,9 @@ pub fn mkdir(args: &[String]) {
 
     for dir in args {
         // need to check if the dir is already exist and handle it's bo7do:(
-        if let Err(_) = fs::create_dir(dir) {
+        if Path::new(dir).exists() {
+            println!("mkdir: cannot creat directory '{}': Already exists", dir);
+        } else if let Err(_) = fs::create_dir(dir) {
             println!("mkdir: cannot creat directory '{}': Permission denied", dir);
         }
     }
