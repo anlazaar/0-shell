@@ -1,10 +1,12 @@
+use libc::tolower;
+
+use crate::helpers::{format_permissions, format_time, gid_to_groupname, uid_to_username};
+use crate::utils::human_readable;
+use std::env;
+use std::fs::{self, DirEntry};
+use std::os::unix::fs::MetadataExt;
 use std::os::unix::fs::PermissionsExt;
 use std::time::SystemTime;
-use std::{ env };
-use std::fs::{ self, DirEntry };
-use std::os::unix::fs::MetadataExt;
-use crate::utils::human_readable;
-use crate::helpers::{ format_time, format_permissions, uid_to_username, gid_to_groupname };
 
 pub fn echo(args: &[String]) {
     if args.len() == 0 {
@@ -108,7 +110,17 @@ fn list_dir(path: &str, a_flag: bool, l_flag: bool, f_flag: bool) {
         let mut total_blocks = 0;
         for c in &content {
             if let Ok(metadata) = c.metadata() {
-                total_blocks += metadata.len() / 1024; // metadata.len() is the file size in bytes
+                let file_name = c.file_name();
+                let name = file_name.to_string_lossy();
+                if !name.starts_with('.') || a_flag {
+                    println!("handing {}, with {}", name, metadata.len());
+
+                    total_blocks += (metadata.len() / 4096) * 4; // metadata.len() is the file size in bytes
+                    if metadata.len() % 4096 != 0 {
+                        total_blocks += 4; // metadata.len() is the file size in bytes
+                    }
+                    println!("current {total_blocks}");
+                }
             }
         }
         println!("total {}", total_blocks);
