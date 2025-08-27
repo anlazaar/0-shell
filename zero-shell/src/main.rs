@@ -1,6 +1,7 @@
 mod shell;
 mod utils;
 mod commands;
+mod helpers;
 
 use shell::Shell;
 
