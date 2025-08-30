@@ -124,9 +124,9 @@ fn list_dir(path: &str, a_flag: bool, l_flag: bool, f_flag: bool) {
             }
         }
 
-        // GNU ls default is 1K blocks unless POSIXLY_CORRECT is set.
-        // Convert 512B blocks to 1K blocks. Sum first, then divide.
-        let total_1k = (total_blocks_512 + 1) / 2; // rounding is harmless; ext4 usually yields even counts
+        // ls default is 1K blocks 
+        // Convert 512B blocks to 1K blocks by Sum then divide
+        let total_1k = (total_blocks_512 + 1) / 2; 
         println!("total {}", total_1k);
 
         for c in &content {
