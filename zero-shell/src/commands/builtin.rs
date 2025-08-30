@@ -5,7 +5,13 @@ use std::path::Path;
 use std::fs::{ self, DirEntry };
 use std::os::unix::fs::MetadataExt;
 use crate::utils::human_readable;
-use crate::helpers::{ format_time, format_permissions, uid_to_username, gid_to_groupname };
+use crate::helpers::{
+    format_time,
+    format_permissions,
+    uid_to_username,
+    gid_to_groupname,
+    blocks512_for_path,
+};
 
 pub fn echo(args: &[String]) {
     if args.len() == 0 {
@@ -101,18 +107,27 @@ fn list_dir(path: &str, a_flag: bool, l_flag: bool, f_flag: bool) {
             content.push(file_or_dir);
         }
     }
+
     // sort the content
     content.sort_by(|a, b| a.file_name().cmp(&b.file_name())); // Keep in mind that file_name returns an OsString not a normal String which not can be not UTF-8 and it's based on the system like in Unix could be arbitrary bytes since OS paths are bytes sequence, but in Windows it's stored as WTF-16 (Windows's Unicode encoding)
 
     if l_flag {
-        // a block in Unix ls sense is 1024 bytes 1 KB
-        let mut total_blocks = 0;
+        let mut total_blocks_512: u64 = 0;
+
         for c in &content {
-            if let Ok(metadata) = c.metadata() {
-                total_blocks += metadata.len() / 1024; // metadata.len() is the file size in bytes
+            let name = c.file_name().to_string_lossy().into_owned();
+            if !a_flag && name.starts_with('.') {
+                continue;
+            }
+            if let Some(b512) = blocks512_for_path(&c.path()) {
+                total_blocks_512 += b512;
             }
         }
-        println!("total {}", total_blocks);
+
+        // GNU ls default is 1K blocks unless POSIXLY_CORRECT is set.
+        // Convert 512B blocks to 1K blocks. Sum first, then divide.
+        let total_1k = (total_blocks_512 + 1) / 2; // rounding is harmless; ext4 usually yields even counts
+        println!("total {}", total_1k);
 
         for c in &content {
             let file_name = c.file_name();

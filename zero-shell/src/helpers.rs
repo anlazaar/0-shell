@@ -2,6 +2,22 @@ use libc::{ getpwuid, getgrgid };
 use chrono::{ DateTime, Local };
 use std::ffi::CStr;
 use std::time::SystemTime;
+use std::ffi::CString;
+use std::os::unix::ffi::OsStrExt;
+use std::path::Path;
+
+pub fn blocks512_for_path(path: &Path) -> Option<u64> {
+    let cpath = CString::new(path.as_os_str().as_bytes()).ok()?;
+    let mut st: libc::stat = unsafe { std::mem::zeroed() };
+    let rc = unsafe { libc::lstat(cpath.as_ptr(), &mut st as *mut libc::stat) };
+    if rc == 0 {
+        // success
+        Some(st.st_blocks as u64)
+    } else {
+        // file not found
+        None
+    }
+}
 
 // Done using chrono.
 pub fn format_time(time: SystemTime) -> String {
