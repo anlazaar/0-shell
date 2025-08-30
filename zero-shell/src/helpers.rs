@@ -1,4 +1,4 @@
-use libc::{ getpwuid, getgrgid };
+use libc::{ getpwuid, getgrgid, stat };
 use chrono::{ DateTime, Local };
 use std::ffi::CStr;
 use std::time::SystemTime;
@@ -8,8 +8,8 @@ use std::path::Path;
 
 pub fn blocks512_for_path(path: &Path) -> Option<u64> {
     let cpath = CString::new(path.as_os_str().as_bytes()).ok()?;
-    let mut st: libc::stat = unsafe { std::mem::zeroed() };
-    let rc = unsafe { libc::lstat(cpath.as_ptr(), &mut st as *mut libc::stat) };
+    let mut st: stat = unsafe { std::mem::zeroed() };
+    let rc = unsafe { stat(cpath.as_ptr(), &mut st as *mut stat) };
     if rc == 0 {
         // success
         Some(st.st_blocks as u64)
