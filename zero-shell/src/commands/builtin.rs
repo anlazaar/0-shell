@@ -9,6 +9,7 @@ use crate::helpers::{
     gid_to_groupname,
     blocks512_for_path,
 };
+use std::io::{ self, Write };
 
 use libc::{ self, DIR, opendir, readdir, closedir, stat };
 
@@ -258,4 +259,32 @@ pub fn rm(args: &[String]) {
             }
         }
     }
+}
+
+pub fn clear(_args: &[String]) {
+    print!("\x1b[2J\x1b[H"); // Clear ANSI code
+    io::stdout().flush().unwrap();
+}
+
+pub fn help(_args: &[String]) {
+    println!("Built-in commands:");
+    println!("  echo [text...]     - Display text");
+    println!("  cd [directory]     - Change directory");
+    println!("  ls [-a] [-l] [-F]  - List directory contents");
+    println!("  pwd                - Print working directory");
+    println!("  cat [file...]      - Display file contents");
+    println!("  cp <src> <dist>    - Copy files");
+    println!("  rm [-r] [file...]  - Remove files/directories");
+    println!("  mv <src> <dist>    - Move/rename files");
+    println!("  mkdir [dir...]     - Create directories");
+    println!("  touch [file...]    - Create empty files or update timestamps");
+    println!("  clear              - Clear the terminal screen");
+    println!("  help               - Show this help message");
+    println!("  exit               - Exit the shell");
+    println!();
+    println!("Features:");
+    println!("  - Multi COmmands with ';'");
+    println!("  - Colorized output");
+    println!("  - Current directory in prompt");
+    println!("  - Ctrl+D to exit");
 }
