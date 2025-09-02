@@ -145,7 +145,7 @@ fn list_dir(path: &str, a_flag: bool, l_flag: bool, f_flag: bool) {
                 let c_full = CString::new(full_path.clone()).unwrap();
 
                 if f_flag {
-                    if libc::stat(c_full.as_ptr(), &mut st) == 0 {
+                    if stat(c_full.as_ptr(), &mut st) == 0 {
                         if (st.st_mode & libc::S_IFMT) == libc::S_IFDIR {
                             display_name.push('/');
                         } else if (st.st_mode & 0o111) != 0 {
@@ -154,7 +154,7 @@ fn list_dir(path: &str, a_flag: bool, l_flag: bool, f_flag: bool) {
                     }
                 }
 
-                if libc::stat(c_full.as_ptr(), &mut st) == 0 {
+                if stat(c_full.as_ptr(), &mut st) == 0 {
                     if (st.st_mode & libc::S_IFMT) == libc::S_IFDIR {
                         print!("\x1b[34m{}\x1b[0m  ", display_name);
                     } else if (st.st_mode & (libc::S_IXUSR | libc::S_IXGRP | libc::S_IXOTH)) != 0 {
@@ -166,7 +166,7 @@ fn list_dir(path: &str, a_flag: bool, l_flag: bool, f_flag: bool) {
                     print!("{}  ", display_name);
                 }
             }
-            println!(); // ✅ newline at the end of the directory listing
+            println!();
         }
     }
 }
