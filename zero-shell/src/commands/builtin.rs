@@ -1,10 +1,7 @@
-use std::os::unix::fs::PermissionsExt;
-use std::time::SystemTime;
 use std::{ env };
+use std::ffi::{ CStr, CString };
 use std::path::Path;
-use std::fs::{ self, DirEntry };
-use std::os::unix::fs::MetadataExt;
-use crate::utils::human_readable;
+use std::fs::{ self };
 use crate::helpers::{
     format_time,
     format_permissions,
@@ -12,6 +9,8 @@ use crate::helpers::{
     gid_to_groupname,
     blocks512_for_path,
 };
+
+use libc::{ self, DIR, opendir, readdir, closedir, stat };
 
 pub fn echo(args: &[String]) {
     if args.len() == 0 {
@@ -92,109 +91,117 @@ pub fn ls(args: &[String]) {
 }
 
 fn list_dir(path: &str, a_flag: bool, l_flag: bool, f_flag: bool) {
-    let dir = match fs::read_dir(path) {
-        Ok(dir) => dir, // dir here is a ReadDir which is an iterator over dir [files and dirs] called DirEntry which we used in the content Vec
-        Err(_) => {
-            println!("Error Listing the directory.");
+    let c_path = CString::new(path).unwrap();
+    unsafe {
+        let dir: *mut DIR = opendir(c_path.as_ptr());
+        if dir.is_null() {
+            println!("Error: cannot open directory {}", path);
             return;
         }
-    };
 
-    let mut content: Vec<DirEntry> = Vec::new();
+        let mut entries = Vec::new();
 
-    for file in dir {
-        if let Ok(file_or_dir) = file {
-            content.push(file_or_dir);
-        }
-    }
-
-    // sort the content
-    content.sort_by(|a, b| a.file_name().cmp(&b.file_name())); // Keep in mind that file_name returns an OsString not a normal String which not can be not UTF-8 and it's based on the system like in Unix could be arbitrary bytes since OS paths are bytes sequence, but in Windows it's stored as WTF-16 (Windows's Unicode encoding)
-
-    if l_flag {
-        let mut total_blocks_512: u64 = 0;
-
-        for c in &content {
-            let name = c.file_name().to_string_lossy().into_owned();
-            if !a_flag && name.starts_with('.') {
-                continue;
+        loop {
+            let entry = readdir(dir);
+            if entry.is_null() {
+                break;
             }
-            if let Some(b512) = blocks512_for_path(&c.path()) {
-                total_blocks_512 += b512;
-            }
-        }
 
-        // ls default is 1K blocks 
-        // Convert 512B blocks to 1K blocks by Sum then divide
-        let total_1k = (total_blocks_512 + 1) / 2; 
-        println!("total {}", total_1k);
-
-        for c in &content {
-            let file_name = c.file_name();
-            let name = file_name.to_string_lossy();
+            let d_name = CStr::from_ptr((*entry).d_name.as_ptr());
+            let name = d_name.to_string_lossy().into_owned();
 
             if !a_flag && name.starts_with('.') {
                 continue;
             }
 
-            print_long_format(c);
+            entries.push(name);
         }
-    } else {
-        for c in &content {
-            let file_name = c.file_name();
-            let name = file_name.to_string_lossy();
 
-            if !a_flag && name.starts_with('.') {
-                continue;
-            }
+        closedir(dir);
 
-            let mut display_name = name.to_string();
-
-            if f_flag {
-                if let Ok(metadata) = c.metadata() {
-                    if metadata.is_dir() {
-                        display_name.push('/');
-                    } else if (metadata.permissions().mode() & 0o111) != 0 {
-                        display_name.push('*');
-                    }
+        entries.sort();
+        if l_flag {
+            let mut total_blocks_512: u64 = 0;
+            for name in &entries {
+                let full_path = format!("{}/{}", path, name);
+                if let Some(b512) = blocks512_for_path(&full_path) {
+                    total_blocks_512 += b512;
                 }
             }
-            // need coloring for dir and executable files
-            print!("{}  ", display_name);
+
+            let total_1k = (total_blocks_512 + 1) / 2;
+            println!("total {}", total_1k);
+
+            for name in entries {
+                let full_path = format!("{}/{}", path, name);
+                print_long_format(&full_path, &name);
+            }
+        } else {
+            for name in entries {
+                let full_path = format!("{}/{}", path, name);
+
+                let mut display_name = name.clone();
+                let mut st: stat = std::mem::zeroed();
+                let c_full = CString::new(full_path.clone()).unwrap();
+
+                if f_flag {
+                    if libc::stat(c_full.as_ptr(), &mut st) == 0 {
+                        if (st.st_mode & libc::S_IFMT) == libc::S_IFDIR {
+                            display_name.push('/');
+                        } else if (st.st_mode & 0o111) != 0 {
+                            display_name.push('*');
+                        }
+                    }
+                }
+
+                if libc::stat(c_full.as_ptr(), &mut st) == 0 {
+                    if (st.st_mode & libc::S_IFMT) == libc::S_IFDIR {
+                        print!("\x1b[34m{}\x1b[0m  ", display_name);
+                    } else if (st.st_mode & (libc::S_IXUSR | libc::S_IXGRP | libc::S_IXOTH)) != 0 {
+                        print!("\x1b[32m{}\x1b[0m  ", display_name);
+                    } else {
+                        print!("{}  ", display_name);
+                    }
+                } else {
+                    print!("{}  ", display_name);
+                }
+            }
+            println!(); // ✅ newline at the end of the directory listing
         }
-        println!();
     }
 }
 
-fn print_long_format(c: &DirEntry) {
-    let metadata = match c.metadata() {
-        Ok(meta) => meta,
-        Err(_) => {
+fn print_long_format(path: &str, name: &str) {
+    unsafe {
+        let mut st: stat = std::mem::zeroed();
+        let c_path = CString::new(path).unwrap();
+
+        if libc::stat(c_path.as_ptr(), &mut st) != 0 {
             return;
         }
-    };
 
-    let file_type = if metadata.is_dir() { 'd' } else { '-' };
+        let file_type = if (st.st_mode & libc::S_IFMT) == libc::S_IFDIR { 'd' } else { '-' };
 
-    let permissions = format_permissions(metadata.permissions().mode());
-    let size = metadata.len();
-    let modified = metadata.modified().unwrap_or(SystemTime::UNIX_EPOCH);
-    let datetime = format_time(modified);
-    let username = uid_to_username(metadata.uid());
-    let groupname = gid_to_groupname(metadata.gid());
-    let nlink = metadata.nlink();
+        let permissions = format_permissions(st.st_mode);
+        let size = st.st_size;
+        let mtime = st.st_mtime as i64;
+        let datetime = format_time(mtime);
+        let username = uid_to_username(st.st_uid);
+        let groupname = gid_to_groupname(st.st_gid);
+        let nlink = st.st_nlink;
 
-    println!(
-        "{}{} {} {} {} {:^10} {} {}", // root root need actually to be real user and group names using libc to get them later
-        file_type,
-        permissions,
-        nlink,
-        username,
-        groupname,
-        human_readable(size), // formated size from raw bytes to readable size [B, K, M, G]
-        datetime,
-        c.file_name().to_string_lossy()
-    );
+        println!(
+            "{}{} {} {} {} {:>8} {} {}",
+            file_type,
+            permissions,
+            nlink,
+            username,
+            groupname,
+            size,
+            datetime,
+            name
+        );
+    }
 }
 
 pub fn mkdir(args: &[String]) {
@@ -204,7 +211,6 @@ pub fn mkdir(args: &[String]) {
     }
 
     for dir in args {
-        // need to check if the dir is already exist and handle it's bo7do:(
         if Path::new(dir).exists() {
             println!("mkdir: cannot creat directory '{}': Already exists", dir);
         } else if let Err(_) = fs::create_dir(dir) {
@@ -215,7 +221,7 @@ pub fn mkdir(args: &[String]) {
 
 pub fn rm(args: &[String]) {
     if args.len() == 0 {
-        println!("rm: MIssing arguments");
+        println!("rm: Missing arguments");
         return;
     }
 

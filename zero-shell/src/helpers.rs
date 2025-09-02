@@ -1,33 +1,33 @@
-use libc::{ getpwuid, getgrgid, stat };
-use chrono::{ DateTime, Local };
+use chrono::{ DateTime, Local, Utc };
 use std::ffi::CStr;
-use std::time::SystemTime;
 use std::ffi::CString;
-use std::os::unix::ffi::OsStrExt;
-use std::path::Path;
 
-pub fn blocks512_for_path(path: &Path) -> Option<u64> {
-    let cpath = CString::new(path.as_os_str().as_bytes()).ok()?;
-    let mut st: stat = unsafe { std::mem::zeroed() };
-    let rc = unsafe { stat(cpath.as_ptr(), &mut st as *mut stat) };
+pub fn blocks512_for_path(path: &str) -> Option<u64> {
+    let cpath = CString::new(path).ok()?;
+    let mut st: libc::stat = unsafe { std::mem::zeroed() };
+    let rc = unsafe { libc::stat(cpath.as_ptr(), &mut st) };
     if rc == 0 {
-        // success
         Some(st.st_blocks as u64)
     } else {
-        // file not found
         None
     }
 }
 
 // Done using chrono.
-pub fn format_time(time: SystemTime) -> String {
-    let datetime: DateTime<Local> = time.into(); // convert to local time
-    // soo the datetime looks like: 2025-08-27 16:19:23.606228703 +01:00 => using format!() we make it look like Feb 27 09:21
-    datetime.format("%b %e %H:%M").to_string()
+pub fn format_time(mtime: i64) -> String {
+    // Build a UTC datetime from epoch seconds
+    let dt_utc = DateTime::from_timestamp(mtime, 0).unwrap_or_else(||
+        DateTime::<Utc>::from_timestamp(0, 0).unwrap()
+    );
+
+    // Convert to local time
+    let local_dt: DateTime<Local> = dt_utc.with_timezone(&Local);
+
+    // Format like "Feb 27 09:21"
+    local_dt.format("%b %e %H:%M").to_string()
 }
 
 pub fn format_permissions(mode: u32) -> String {
-    let mut perms = String::new();
     // let's get back to the first quest in Go pool XD:
     // mod => 0o755 for example the 0o stands for octale and the rest is permitions and 3 bits for each one [user, group, others] total of 9 bits
     // binary numbers : [0: 000, 1: 001, 2: 010, 3: 011, 4: 100, 5: 101, 6: 110, 7: 111]
@@ -38,6 +38,9 @@ pub fn format_permissions(mode: u32) -> String {
     // execute = 0o100 = x
     // meams that :
     // we will have a rwxr-xr-x as a formated permissions
+
+    // user
+    let mut perms = String::new();
 
     // user
     perms.push(if (mode & 0o400) != 0 { 'r' } else { '-' });
@@ -59,22 +62,22 @@ pub fn format_permissions(mode: u32) -> String {
 
 pub fn uid_to_username(uid: u32) -> String {
     unsafe {
-        let passwd = getpwuid(uid);
-        if passwd.is_null() {
+        let pw = libc::getpwuid(uid);
+        if pw.is_null() {
             return uid.to_string();
         }
-        let name = CStr::from_ptr((*passwd).pw_name);
+        let name = CStr::from_ptr((*pw).pw_name);
         name.to_string_lossy().into_owned()
     }
 }
 
-pub fn gid_to_groupname(uid: u32) -> String {
+pub fn gid_to_groupname(gid: u32) -> String {
     unsafe {
-        let passwd = getgrgid(uid);
-        if passwd.is_null() {
-            return uid.to_string();
+        let gr = libc::getgrgid(gid);
+        if gr.is_null() {
+            return gid.to_string();
         }
-        let name = CStr::from_ptr((*passwd).gr_name);
+        let name = CStr::from_ptr((*gr).gr_name);
         name.to_string_lossy().into_owned()
     }
 }
