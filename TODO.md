@@ -30,24 +30,24 @@ Track what’s done, what’s pending, and what’s next.
 - [docs] [https://doc.rust-lang.org/std/fs/struct.Metadata.html]
 - [x] **Commit 6: ls (basic)**
 - [x] **Commit 7: ls flags (-l, -a, -F)**
-- [ ] **Commit 8: cat**   [amine]
-- [ ] **Commit 9: cp + mv**   [amine]
-- [ ] **Commit 10: mkdir + rm + touch**
+- [ ] **Commit 8: cat** [amine]
+- [ ] **Commit 9: cp + mv** [amine]
+- [x] **Commit 10: mkdir + rm + touch**
 
 ---
 
 ## ✨ Phase 3: Features
 
-- [ ] **Commit 11: Colorized output**
-- [ ] **Commit 12: Enhanced prompt**
-- [ ] **Commit 13: Command chaining (`;`)**
-- [ ] **Commit 14: clear + help**
+- [x] **Commit 11: Colorized output**
+- [x] **Commit 12: Enhanced prompt**
+- [x] **Commit 13: Command chaining (`;`)**
+- [x] **Commit 14: clear + help**
 
 ---
 
 ## 🛠️ Phase 4: Final touches
 
-- [ ] **Commit 15: Error handling**
+- [x] **Commit 15: Error handling**
 - [ ] **Commit 16: Final tests**
 - [ ] **Commit 17: Documentation**
 - [ ] **Commit 18: Optimizations**
