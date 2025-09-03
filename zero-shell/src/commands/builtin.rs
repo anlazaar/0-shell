@@ -43,7 +43,7 @@ pub fn cd(args: &[String]) {
     let path: String;
 
     if args.len() == 0 {
-        path = env::var("HOME").unwrap_or("~".to_string());
+        path = env::var("HOME").unwrap_or("/".to_string());
     } else {
         path = args[0].clone();
     }
@@ -206,7 +206,7 @@ fn print_long_format(path: &str, name: &str) {
 }
 
 pub fn mkdir(args: &[String]) {
-    if args.len() == 0 {
+    if args.is_empty() {
         println!("mkdir: missing arguments");
         return;
     }
@@ -256,6 +256,28 @@ pub fn rm(args: &[String]) {
         } else {
             if let Err(_) = fs::remove_file(path) {
                 println!("rm: cannot remove '{}': Permission Denied", file);
+            }
+        }
+    }
+}
+
+pub fn touch(args: &[String]) {
+    if args.is_empty() {
+        println!("touch: missing file");
+        return;
+    }
+
+    for filename in args {
+        let path = Path::new(filename);
+
+        if path.exists() {
+            continue;
+        } else {
+            match fs::File::create(path) {
+                Ok(_) => {}
+                Err(_) => {
+                    println!("touch: cannot touch '{}' Permission Denied", filename);
+                }
             }
         }
     }

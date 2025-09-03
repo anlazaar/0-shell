@@ -1,6 +1,6 @@
 mod builtin;
 
-use builtin::{ echo, pwd, cd, ls, mkdir, rm, help, clear };
+use builtin::{ echo, pwd, cd, ls, mkdir, rm, help, clear, touch };
 use std::collections::HashMap;
 
 pub struct CommandExecutor {
@@ -22,6 +22,9 @@ impl CommandExecutor {
         commands.insert("ls".to_string(), Box::new(ls));
         // mkdir
         commands.insert("mkdir".to_string(), Box::new(mkdir));
+        // touch
+        commands.insert("touch".to_string(), Box::new(touch));
+
         // rm
         commands.insert("rm".to_string(), Box::new(rm));
         // clear
