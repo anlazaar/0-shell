@@ -18,10 +18,7 @@ pub fn echo(args: &[String]) {
         println!();
         return;
     }
-
     let output = args.join(" ");
-
-    let output = output.replace("\\n", "\n").replace("\\t", "\t");
     println!("{}", output);
 }
 
