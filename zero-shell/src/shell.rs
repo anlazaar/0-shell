@@ -1,6 +1,7 @@
 use std::io::{ self, Write };
 
 use crate::commands::CommandExecutor;
+use crate::helpers::clean_input;
 use crate::utils::parse_command;
 
 pub struct Shell {
@@ -46,7 +47,7 @@ impl Shell {
                     break;
                 }
                 Ok(_) => {
-                    let input = input.trim();
+                    let input = clean_input(input.trim());
                     if !input.is_empty() {
                         if input.starts_with("echo") {
                             let mut content = input
@@ -65,7 +66,7 @@ impl Shell {
                                 match io::stdin().read_line(&mut to_echo) {
                                     Ok(0) => {
                                         break;
-                                    } 
+                                    }
                                     Ok(_) => {
                                         content.push('\n');
                                         content.push_str(to_echo.trim());
@@ -86,7 +87,7 @@ impl Shell {
                                 println!("{}", content);
                             }
                         } else {
-                            self.execute_command(input);
+                            self.execute_command(input.as_str());
                         }
                     }
                 }
