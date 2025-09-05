@@ -48,7 +48,46 @@ impl Shell {
                 Ok(_) => {
                     let input = input.trim();
                     if !input.is_empty() {
-                        self.execute_command(input);
+                        if input.starts_with("echo") {
+                            let mut content = input
+                                .strip_prefix("echo")
+                                .unwrap()
+                                .trim()
+                                .to_string();
+
+                            let mut c_quotes = content.matches('"').count() % 2 != 0;
+
+                            while c_quotes {
+                                print!("dquote> ");
+                                io::stdout().flush().unwrap();
+
+                                let mut to_echo = String::new();
+                                match io::stdin().read_line(&mut to_echo) {
+                                    Ok(0) => {
+                                        break;
+                                    } 
+                                    Ok(_) => {
+                                        content.push('\n');
+                                        content.push_str(to_echo.trim());
+                                        c_quotes = content.matches('"').count() % 2 != 0;
+                                    }
+                                    Err(_) => {
+                                        break;
+                                    }
+                                }
+                            }
+
+                            // Now process final echo content
+                            if content.contains('"') {
+                                // remove all double quotes
+                                let cleaned = content.replace("\"", "");
+                                println!("{}", cleaned);
+                            } else {
+                                println!("{}", content);
+                            }
+                        } else {
+                            self.execute_command(input);
+                        }
                     }
                 }
                 Err(error) => {
