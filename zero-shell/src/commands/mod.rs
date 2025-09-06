@@ -1,6 +1,6 @@
 mod builtin;
 
-use builtin::{ echo, pwd, cd, ls, mkdir, rm, help, clear, touch };
+use builtin::{ echo, pwd, cd, ls, mkdir, rm, help, clear, touch, cp };
 use std::collections::HashMap;
 
 pub struct CommandExecutor {
@@ -29,8 +29,11 @@ impl CommandExecutor {
         commands.insert("rm".to_string(), Box::new(rm));
         // clear
         commands.insert("clear".to_string(), Box::new(clear));
-        // rm
+        // help
         commands.insert("--help".to_string(), Box::new(help));
+
+        // cp
+        commands.insert("cp".to_string(), Box::new(cp));
 
         // Thinking of making a HashMap that containes every command with it's function >>> like handleFunc or a Multiplexere
         CommandExecutor { commands }

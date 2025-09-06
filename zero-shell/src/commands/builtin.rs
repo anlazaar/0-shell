@@ -1,17 +1,13 @@
-use std::{ env };
-use std::ffi::{ CStr, CString };
-use std::path::Path;
-use std::fs::{ self };
 use crate::helpers::{
-    format_time,
-    format_permissions,
-    uid_to_username,
-    gid_to_groupname,
-    blocks512_for_path,
+    blocks512_for_path, format_permissions, format_time, gid_to_groupname, uid_to_username,
 };
-use std::io::{ self, Write };
+use std::env;
+use std::ffi::{CStr, CString};
+use std::fs::{self};
+use std::io::{self, Write};
+use std::path::{Path, PathBuf};
 
-use libc::{ self, DIR, opendir, readdir, closedir, stat };
+use libc::{self, DIR, closedir, opendir, readdir, stat};
 
 pub fn echo(args: &[String]) {
     if args.len() == 0 {
@@ -178,7 +174,11 @@ fn print_long_format(path: &str, name: &str) {
             return;
         }
 
-        let file_type = if (st.st_mode & libc::S_IFMT) == libc::S_IFDIR { 'd' } else { '-' };
+        let file_type = if (st.st_mode & libc::S_IFMT) == libc::S_IFDIR {
+            'd'
+        } else {
+            '-'
+        };
 
         let permissions = format_permissions(st.st_mode);
         let size = st.st_size;
@@ -190,14 +190,7 @@ fn print_long_format(path: &str, name: &str) {
 
         println!(
             "{}{} {} {} {} {:>8} {} {}",
-            file_type,
-            permissions,
-            nlink,
-            username,
-            groupname,
-            size,
-            datetime,
-            name
+            file_type, permissions, nlink, username, groupname, size, datetime, name
         );
     }
 }
@@ -283,6 +276,42 @@ pub fn touch(args: &[String]) {
 pub fn clear(_args: &[String]) {
     print!("\x1b[2J\x1b[H\x1b[3J"); // 2J: clear shown screen / H: cursor to top-left / 3J: clear hidden
     io::stdout().flush().unwrap();
+}
+
+pub fn cp(args: &[String]) {
+    if args.len() != 2 {
+        println!("cp: usage: cp <source> <destination>");
+        return;
+    }
+
+    let src = Path::new(&args[0]);
+    let dest = Path::new(&args[1]);
+
+    if !src.exists() {
+        println!("cp: '{}' does not exist", src.display());
+        return;
+    }
+
+    if src.is_dir() {
+        println!(
+            "cp: '{}' is a directory. Use recursive copy (not implemented)",
+            src.display()
+        );
+        return;
+    }
+
+    let dest = if dest.is_dir() {
+        let mut dest_path = PathBuf::from(dest);
+        dest_path.push(src.file_name().unwrap());
+        dest_path
+    } else {
+        PathBuf::from(dest)
+    };
+
+    match fs::copy(src, &dest) {
+        Ok(_) => {}
+        Err(e) => println!("cp: error copying file: {}", e),
+    }
 }
 
 pub fn help(_args: &[String]) {
