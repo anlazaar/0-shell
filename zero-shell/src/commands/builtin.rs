@@ -281,7 +281,7 @@ pub fn touch(args: &[String]) {
 }
 
 pub fn clear(_args: &[String]) {
-    print!("\x1b[2J\x1b[H\x1b[3J"); // Clear ANSI code
+    print!("\x1b[2J\x1b[H\x1b[3J"); // 2J: clear shown screen / H: cursor to top-left / 3J: clear hidden
     io::stdout().flush().unwrap();
 }
 
@@ -302,7 +302,7 @@ pub fn help(_args: &[String]) {
     println!("  exit               - Exit the shell");
     println!();
     println!("Features:");
-    println!("  - Multi COmmands with ';'");
+    println!("  - Multi Commands with ';'");
     println!("  - Colorized output");
     println!("  - Current directory in prompt");
     println!("  - Ctrl+D to exit");
