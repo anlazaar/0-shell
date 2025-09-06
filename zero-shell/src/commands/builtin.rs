@@ -293,10 +293,7 @@ pub fn cp(args: &[String]) {
     }
 
     if src.is_dir() {
-        println!(
-            "cp: '{}' is a directory. Use recursive copy (not implemented)",
-            src.display()
-        );
+        println!("cp: '{}' is a directory", src.display());
         return;
     }
 
@@ -311,6 +308,34 @@ pub fn cp(args: &[String]) {
     match fs::copy(src, &dest) {
         Ok(_) => {}
         Err(e) => println!("cp: error copying file: {}", e),
+    }
+}
+
+pub fn mv(args: &[String]) {
+    if args.len() != 2 {
+        println!("mv: usage: mv <src> <dest>");
+        return;
+    }
+
+    let src = Path::new(&args[0]);
+    let dest = Path::new(&args[1]);
+
+    if !src.exists() {
+        println!("mv: '{}' does not exist", src.display());
+        return;
+    }
+
+    let dest = if dest.is_dir() {
+        let mut dest_path = PathBuf::from(dest);
+        dest_path.push(src.file_name().unwrap());
+        dest_path
+    } else {
+        PathBuf::from(dest)
+    };
+
+    match std::fs::rename(src, &dest) {
+        Ok(_) => {}
+        Err(e) => println!("mv: error moving file: {}", e),
     }
 }
 
