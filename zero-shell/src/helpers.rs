@@ -13,6 +13,15 @@ pub fn blocks512_for_path(path: &str) -> Option<u64> {
     }
 }
 
+pub fn clean_input(input: &str) -> String {
+    input
+        .replace("\x1B[A", "")
+        .replace("\x1B[B", "")
+        .replace("\x1B[C", "")
+        .replace("\x1B[D", "")
+        .to_string()
+}
+
 // Done using chrono.
 pub fn format_time(mtime: i64) -> String {
     // Build a UTC datetime from epoch seconds
