@@ -281,7 +281,7 @@ pub fn touch(args: &[String]) {
 }
 
 pub fn clear(_args: &[String]) {
-    print!("\x1b[2J\x1b[H"); // Clear ANSI code
+    print!("\x1b[2J\x1b[H\x1b[3J"); // Clear ANSI code
     io::stdout().flush().unwrap();
 }
 
