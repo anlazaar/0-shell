@@ -31,7 +31,6 @@ impl Shell {
         println!("\x1b[0m");
         println!("\x1b[33m🚀 Welcome to 0-Shell\x1b[0m");
         println!("\x1b[90mType '--help' for available commands or 'exit' to quit\x1b[0m");
-        println!("\x1b[90mNote: Ctrl+C will terminate the shell\x1b[0m");
         println!();
     }
 

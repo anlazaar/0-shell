@@ -3,8 +3,8 @@ use crate::helpers::{
 };
 use std::env;
 use std::ffi::{CStr, CString};
-use std::fs::{self};
-use std::io::{self, Write};
+use std::fs::{self, File};
+use std::io::{self, BufRead, BufReader, Write};
 use std::path::{Path, PathBuf};
 
 use libc::{self, DIR, closedir, opendir, readdir, stat};
@@ -336,6 +336,45 @@ pub fn mv(args: &[String]) {
     match std::fs::rename(src, &dest) {
         Ok(_) => {}
         Err(e) => println!("mv: error moving file: {}", e),
+    }
+}
+
+pub fn cat(args: &[String]) {
+    if args.is_empty() {
+        // No arguments → behave like shell `cat`, read from stdin
+        let stdin = io::stdin();
+        let mut handle = stdin.lock();
+        let mut buffer = String::new();
+
+        while let Ok(n) = handle.read_line(&mut buffer) {
+            if n == 0 {
+                break; // EOF
+            }
+            print!("{}", buffer);
+            buffer.clear();
+        }
+        return;
+    }
+
+    for filename in args {
+        let file = File::open(filename);
+        match file {
+            Ok(f) => {
+                let reader = BufReader::new(f);
+                for line in reader.lines() {
+                    match line {
+                        Ok(content) => println!("{}", content),
+                        Err(e) => {
+                            eprintln!("cat: error reading from '{}': {}", filename, e);
+                            break;
+                        }
+                    }
+                }
+            }
+            Err(_) => {
+                eprintln!("cat: {}: No such file or directory", filename);
+            }
+        }
     }
 }
 
