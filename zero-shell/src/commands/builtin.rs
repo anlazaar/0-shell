@@ -307,11 +307,6 @@ pub fn cp(args: &[String]) {
     let src = Path::new(&args[0]);
     let dest = Path::new(&args[1]);
 
-    if !src.exists() {
-        println!("cp: '{}' does not exist", src.display());
-        return;
-    }
-
     if src.is_dir() {
         println!("cp: '{}' is a directory", src.display());
         return;
