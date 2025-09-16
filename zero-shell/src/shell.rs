@@ -126,7 +126,7 @@ impl Shell {
                     path.to_string_lossy().to_string()
                 }
             })
-            .unwrap();
+            .unwrap_or("~".to_string());
 
         print!("\x1b[32m{}\x1b[0m $ ", current_dir);
         io::stdout().flush().unwrap();

@@ -44,17 +44,18 @@ Track what’s done, what’s pending, and what’s next.
 - [x] **Commit 14: clear + help**
 
 
-- ls permissions and types c l b (ls -laF /dev)
-- ls -F (* / = / @)
-- ls -l for files and directories -folder names 
-- cp mv permission denied error 
-- echo newlines
-- '-' handeling 
-- cd -
-- home as ~
-- '\' in touch and mkdir should escape
-- ls quotes in case of special chars
-- ls -l minor and major for disks
+- [ ] **ls permissions and types c l b (ls -laF /dev)**
+- [ ] **ls -F (* / = / @)**
+- [ ] **ls -l for files and directories -folder names** 
+- [ ] **cp mv permission denied error** 
+- [ ] **echo newlines**
+- [ ] **'-' handeling** 
+- [ ] **cd -**
+- [ ] **home as ~**
+- [ ] **'\' in touch and mkdir should escape**
+- [ ] **ls quotes in case of special chars**
+- [ ] **ls -l minor and major for disks**
+
 ---
 
 ## 🛠️ Phase 4: Final touches
