@@ -1,13 +1,13 @@
 use crate::helpers::{
     blocks512_for_path, format_permissions, format_time, gid_to_groupname, uid_to_username,
 };
-use std::env;
 use std::ffi::{CStr, CString};
 use std::fs::{self, File};
 use std::io::{self, BufRead, BufReader, Write};
 use std::path::{Path, PathBuf};
+use std::{env, usize};
 
-use libc::{self, DIR, closedir, opendir, readdir, stat, lstat};
+use libc::{self, DIR, PATH_MAX, c_char, closedir, lstat, opendir, readdir, readlink, stat};
 
 pub fn echo(args: &[String]) {
     if args.len() == 0 {
@@ -166,6 +166,23 @@ fn list_dir(path: &str, a_flag: bool, l_flag: bool, f_flag: bool) {
                 if f_flag {
                     let mut st: stat = std::mem::zeroed();
                     let c_full = CString::new(full_path.clone()).unwrap();
+
+                    if lstat(c_full.as_ptr(), &mut st) == 0
+                        && (st.st_mode & libc::S_IFMT) == libc::S_IFLNK
+                    {
+                        let mut buf = vec![0u8; PATH_MAX as usize];
+                        let len = readlink(
+                            c_full.as_ptr(),
+                            buf.as_mut_ptr() as *mut c_char,
+                            PATH_MAX as usize,
+                        );
+                        if len >= 0 {
+                            let target_path =
+                                String::from_utf8_lossy(&buf[..len as usize]).to_string();
+                            name.push_str(" -> ");
+                            name.push_str(&target_path);
+                        }
+                    }
 
                     if stat(c_full.as_ptr(), &mut st) == 0 {
                         if (st.st_mode & libc::S_IFMT) == libc::S_IFDIR {
