@@ -350,11 +350,6 @@ pub fn mv(args: &[String]) {
     let src = Path::new(&args[0]);
     let dest = Path::new(&args[1]);
 
-    if !src.exists() {
-        println!("mv: '{}' does not exist", src.display());
-        return;
-    }
-
     let dest = if dest.is_dir() {
         let mut dest_path = PathBuf::from(dest);
         dest_path.push(src.file_name().unwrap());
