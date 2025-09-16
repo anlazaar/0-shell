@@ -1,13 +1,17 @@
 use crate::helpers::{
-    blocks512_for_path, format_permissions, format_time, gid_to_groupname, uid_to_username,
+    blocks512_for_path,
+    format_permissions,
+    format_time,
+    gid_to_groupname,
+    uid_to_username,
 };
 use std::env;
-use std::ffi::{CStr, CString};
-use std::fs::{self, File};
-use std::io::{self, BufRead, BufReader, Write};
-use std::path::{Path, PathBuf};
+use std::ffi::{ CStr, CString };
+use std::fs::{ self, File };
+use std::io::{ self, BufRead, BufReader, Write };
+use std::path::{ Path, PathBuf };
 
-use libc::{self, DIR, closedir, opendir, readdir, stat};
+use libc::{ self, DIR, closedir, opendir, readdir, stat };
 
 pub fn echo(args: &[String]) {
     if args.len() == 0 {
@@ -35,7 +39,7 @@ pub fn cd(args: &[String]) {
 
     let path: String;
 
-    if args.len() == 0 {
+    if args.len() == 0 || (args.len() == 1 && args[0] == "~") {
         path = env::var("HOME").unwrap_or("/".to_string());
     } else {
         path = args[0].clone();
@@ -79,7 +83,7 @@ pub fn ls(args: &[String]) {
         paths.push(".".to_string());
     }
 
-    println!("{}, {}, {}",  a_flag, l_flag, f_flag);
+    println!("{}, {}, {}", a_flag, l_flag, f_flag);
     for path in paths {
         list_dir(&path, a_flag, l_flag, f_flag);
     }
@@ -113,28 +117,28 @@ fn list_dir(path: &str, a_flag: bool, l_flag: bool, f_flag: bool) {
         }
 
         closedir(dir);
-//  items.sort_by(|a, b| {
-//         match (&a.0[..], &b.0[..]) {
-//             (".", _) => std::cmp::Ordering::Less,
-//             (_, ".") => std::cmp::Ordering::Greater,
-//             ("..", _) if a.0 != "." => std::cmp::Ordering::Less,
-//             (_, "..") if b.0 != "." => std::cmp::Ordering::Greater,
-//             _ => {
-//                 let a_name = if a.0.starts_with('.') && a.0 != "." && a.0 != ".." {
-//                     &a.0[1..]
-//                 } else {
-//                     &a.0
-//                 };
-//                 let b_name = if b.0.starts_with('.') && b.0 != "." && b.0 != ".." {
-//                     &b.0[1..]
-//                 } else {
-//                     &b.0
-//                 };
-//                 a_name.to_lowercase().cmp(&b_name.to_lowercase())
-//             }
-//         }
-//     });
-        entries.sort();
+        entries.sort_by(|a, b| {
+            match (a.as_str(), b.as_str()) {
+                (".", _) => std::cmp::Ordering::Less,
+                (_, ".") => std::cmp::Ordering::Greater,
+                ("..", _) if a != "." => std::cmp::Ordering::Less,
+                (_, "..") if b != "." => std::cmp::Ordering::Greater,
+                _ => {
+                    let a_name = if a.starts_with('.') && a != "." && a != ".." {
+                        &a[1..]
+                    } else {
+                        &a
+                    };
+                    let b_name = if b.starts_with('.') && b != "." && b != ".." {
+                        &b[1..]
+                    } else {
+                        &b
+                    };
+                    a_name.to_lowercase().cmp(&b_name.to_lowercase())
+                }
+            }
+        });
+        
         if l_flag {
             let mut total_blocks_512: u64 = 0;
             for name in &entries {
@@ -150,18 +154,16 @@ fn list_dir(path: &str, a_flag: bool, l_flag: bool, f_flag: bool) {
             for mut name in entries {
                 let full_path = format!("{}/{}", path, name);
                 if f_flag {
+                    let mut st: stat = std::mem::zeroed();
+                    let c_full = CString::new(full_path.clone()).unwrap();
 
-                        let mut st: stat = std::mem::zeroed();
-                        let c_full = CString::new(full_path.clone()).unwrap();
-    
-                        if stat(c_full.as_ptr(), &mut st) == 0 {
-                            if (st.st_mode & libc::S_IFMT) == libc::S_IFDIR {
-                                name.push('/');
-                            } else if (st.st_mode & 0o111) != 0 {
-                                name.push('*');
-                            }
+                    if stat(c_full.as_ptr(), &mut st) == 0 {
+                        if (st.st_mode & libc::S_IFMT) == libc::S_IFDIR {
+                            name.push('/');
+                        } else if (st.st_mode & 0o111) != 0 {
+                            name.push('*');
                         }
-                    
+                    }
                 }
                 print_long_format(&full_path, &name);
             }
@@ -209,11 +211,7 @@ fn print_long_format(path: &str, name: &str) {
             return;
         }
 
-        let file_type = if (st.st_mode & libc::S_IFMT) == libc::S_IFDIR {
-            'd'
-        } else {
-            '-'
-        };
+        let file_type = if (st.st_mode & libc::S_IFMT) == libc::S_IFDIR { 'd' } else { '-' };
 
         let permissions = format_permissions(st.st_mode);
         let size = st.st_size;
@@ -225,7 +223,14 @@ fn print_long_format(path: &str, name: &str) {
 
         println!(
             "{}{} {} {} {} {:>8} {} {}",
-            file_type, permissions, nlink, username, groupname, size, datetime, name
+            file_type,
+            permissions,
+            nlink,
+            username,
+            groupname,
+            size,
+            datetime,
+            name
         );
     }
 }

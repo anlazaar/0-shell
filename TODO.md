@@ -30,8 +30,8 @@ Track what’s done, what’s pending, and what’s next.
 - [docs] [https://doc.rust-lang.org/std/fs/struct.Metadata.html]
 - [x] **Commit 6: ls (basic)**
 - [x] **Commit 7: ls flags (-l, -a, -F)**
-- [ ] **Commit 8: cat** [amine]
-- [ ] **Commit 9: cp + mv** [amine]
+- [x] **Commit 8: cat** [amine]
+- [x] **Commit 9: cp + mv** [amine]
 - [x] **Commit 10: mkdir + rm + touch**
 
 ---
@@ -44,7 +44,7 @@ Track what’s done, what’s pending, and what’s next.
 - [x] **Commit 14: clear + help**
 
 
-- [ ] **ls permissions and types c l b (ls -laF /dev)**
+- [x] **ls permissions and types c l b (ls -laF /dev)**
 - [ ] **ls -F (* / = / @)**
 - [ ] **ls -l for files and directories -folder names** 
 - [x] **cp mv permission denied error** 
