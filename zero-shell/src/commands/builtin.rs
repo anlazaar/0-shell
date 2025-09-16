@@ -96,8 +96,11 @@ pub fn ls(args: &[String]) {
         paths.push(".".to_string());
     }
 
-    for path in paths {
+    for (i, path) in paths.iter().enumerate() {
         list_dir(&path, a_flag, l_flag, f_flag);
+        if i != paths.len() - 1 {
+            println!();
+        }
     }
 }
 
@@ -150,6 +153,7 @@ fn list_dir(path: &str, a_flag: bool, l_flag: bool, f_flag: bool) {
         });
 
         if l_flag {
+            println!("{path}:");
             let mut total_blocks_512: u64 = 0;
             for name in &entries {
                 let full_path = format!("{}/{}", path, name);
