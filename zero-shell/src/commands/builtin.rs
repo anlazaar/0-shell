@@ -4,6 +4,7 @@ use crate::helpers::{
 use std::ffi::{CStr, CString};
 use std::fs::{self, File};
 use std::io::{self, BufRead, BufReader, Write};
+use std::os::unix::ffi::OsStrExt;
 use std::path::{Path, PathBuf};
 use std::{env, usize};
 
@@ -106,67 +107,81 @@ pub fn ls(args: &[String]) {
 
 fn list_dir(path: &str, a_flag: bool, l_flag: bool, f_flag: bool) {
     let c_path = CString::new(path).unwrap();
+    let pth = Path::new(path);
     unsafe {
-        let dir: *mut DIR = opendir(c_path.as_ptr());
-        if dir.is_null() {
-            println!("Error: cannot open directory {}", path);
-            return;
-        }
-
         let mut entries = Vec::new();
 
-        loop {
-            let entry = readdir(dir);
-            if entry.is_null() {
-                break;
+        if pth.is_dir() {
+            let dir: *mut DIR = opendir(c_path.as_ptr());
+            if dir.is_null() {
+                println!("Error: cannot open directory {}", path);
+                return;
             }
 
-            let d_name = CStr::from_ptr((*entry).d_name.as_ptr());
-            let name = d_name.to_string_lossy().into_owned();
+            loop {
+                let entry = readdir(dir);
+                if entry.is_null() {
+                    break;
+                }
 
-            if !a_flag && name.starts_with('.') {
-                continue;
+                let d_name = CStr::from_ptr((*entry).d_name.as_ptr());
+                let name = d_name.to_string_lossy().into_owned();
+
+                if !a_flag && name.starts_with('.') {
+                    continue;
+                }
+
+                entries.push(name);
             }
+            closedir(dir);
 
-            entries.push(name);
+            entries.sort_by(|a, b| match (a.as_str(), b.as_str()) {
+                (".", _) => std::cmp::Ordering::Less,
+                (_, ".") => std::cmp::Ordering::Greater,
+                ("..", _) if a != "." => std::cmp::Ordering::Less,
+                (_, "..") if b != "." => std::cmp::Ordering::Greater,
+                _ => {
+                    let a_name = if a.starts_with('.') && a != "." && a != ".." {
+                        &a[1..]
+                    } else {
+                        &a
+                    };
+                    let b_name = if b.starts_with('.') && b != "." && b != ".." {
+                        &b[1..]
+                    } else {
+                        &b
+                    };
+                    a_name.to_lowercase().cmp(&b_name.to_lowercase())
+                }
+            });
+        } else {
+            entries.push(path.to_string());
         }
 
-        closedir(dir);
-        entries.sort_by(|a, b| match (a.as_str(), b.as_str()) {
-            (".", _) => std::cmp::Ordering::Less,
-            (_, ".") => std::cmp::Ordering::Greater,
-            ("..", _) if a != "." => std::cmp::Ordering::Less,
-            (_, "..") if b != "." => std::cmp::Ordering::Greater,
-            _ => {
-                let a_name = if a.starts_with('.') && a != "." && a != ".." {
-                    &a[1..]
-                } else {
-                    &a
-                };
-                let b_name = if b.starts_with('.') && b != "." && b != ".." {
-                    &b[1..]
-                } else {
-                    &b
-                };
-                a_name.to_lowercase().cmp(&b_name.to_lowercase())
-            }
-        });
-
         if l_flag {
-            println!("{path}:");
-            let mut total_blocks_512: u64 = 0;
-            for name in &entries {
-                let full_path = format!("{}/{}", path, name);
-                if let Some(b512) = blocks512_for_path(&full_path) {
-                    total_blocks_512 += b512;
-                }
-            }
+            if pth.is_dir() {
+                println!("{path}:");
 
-            let total_1k = (total_blocks_512 + 1) / 2;
-            println!("total {}", total_1k);
+                let mut total_blocks_512: u64 = 0;
+                for name in &entries {
+                    let full_path = format!("{}/{}", path, name);
+                    if let Some(b512) = blocks512_for_path(&full_path) {
+                        total_blocks_512 += b512;
+                    }
+                }
+
+                let total_1k = (total_blocks_512 + 1) / 2;
+                println!("total {}", total_1k);
+            }
 
             for mut name in entries {
-                let full_path = format!("{}/{}", path, name);
+                let full_path: String;
+                if pth.is_dir() {
+                    full_path = format!("{}/{}", path, name);
+                } else {
+                    full_path = path.to_string();
+                }
+
                 if f_flag {
                     let mut st: stat = std::mem::zeroed();
                     let c_full = CString::new(full_path.clone()).unwrap();
@@ -198,7 +213,7 @@ fn list_dir(path: &str, a_flag: bool, l_flag: bool, f_flag: bool) {
                         }
                     }
                 }
-                print_long_format(&full_path, &name);
+                print_long_format(&full_path, &name, pth);
             }
         } else {
             for name in entries {
@@ -239,7 +254,7 @@ fn list_dir(path: &str, a_flag: bool, l_flag: bool, f_flag: bool) {
     }
 }
 
-fn print_long_format(path: &str, name: &str) {
+fn print_long_format(path: &str, name: &str, pth: &Path) {
     unsafe {
         let mut st: stat = std::mem::zeroed();
         let c_path = CString::new(path).unwrap();
@@ -255,7 +270,10 @@ fn print_long_format(path: &str, name: &str) {
         };
 
         let permissions = format_permissions(st.st_mode);
-        let size = st.st_size;
+        let mut size = String::new();
+        if pth.is_dir() {
+            size = st.st_size.to_string();
+        }
         let mtime = st.st_mtime as i64;
         let datetime = format_time(mtime);
         let username = uid_to_username(st.st_uid);
