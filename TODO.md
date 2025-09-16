@@ -49,8 +49,8 @@ Track what’s done, what’s pending, and what’s next.
 - [ ] **ls -l for files and directories -folder names** 
 - [x] **cp mv permission denied error** 
 - [ ] **echo newlines**
-- [x] **'-' handeling** 
-- [ ] **cd -**
+- [ ] **'-' handeling** 
+- [x] **cd -**
 - [ ] **home as ~**
 - [ ] **'\' in touch and mkdir should escape**
 - [ ] **ls quotes in case of special chars**
