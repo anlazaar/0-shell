@@ -79,6 +79,7 @@ pub fn ls(args: &[String]) {
         paths.push(".".to_string());
     }
 
+    println!("{}, {}, {}",  a_flag, l_flag, f_flag);
     for path in paths {
         list_dir(&path, a_flag, l_flag, f_flag);
     }
@@ -146,8 +147,22 @@ fn list_dir(path: &str, a_flag: bool, l_flag: bool, f_flag: bool) {
             let total_1k = (total_blocks_512 + 1) / 2;
             println!("total {}", total_1k);
 
-            for name in entries {
+            for mut name in entries {
                 let full_path = format!("{}/{}", path, name);
+                if f_flag {
+
+                        let mut st: stat = std::mem::zeroed();
+                        let c_full = CString::new(full_path.clone()).unwrap();
+    
+                        if stat(c_full.as_ptr(), &mut st) == 0 {
+                            if (st.st_mode & libc::S_IFMT) == libc::S_IFDIR {
+                                name.push('/');
+                            } else if (st.st_mode & 0o111) != 0 {
+                                name.push('*');
+                            }
+                        }
+                    
+                }
                 print_long_format(&full_path, &name);
             }
         } else {
