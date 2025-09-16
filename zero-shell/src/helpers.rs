@@ -1,4 +1,5 @@
 use chrono::{ DateTime, Local, Utc };
+use chrono_tz::Africa::Casablanca;
 use std::ffi::CStr;
 use std::ffi::CString;
 
@@ -30,7 +31,7 @@ pub fn format_time(mtime: i64) -> String {
     );
 
     // Convert to local time
-    let local_dt: DateTime<Local> = dt_utc.with_timezone(&Local);
+    let local_dt  = dt_utc.with_timezone(&Casablanca);
 
     // Format like "Feb 27 09:21"
     local_dt.format("%b %e %H:%M").to_string()
