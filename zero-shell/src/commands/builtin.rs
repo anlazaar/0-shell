@@ -112,7 +112,27 @@ fn list_dir(path: &str, a_flag: bool, l_flag: bool, f_flag: bool) {
         }
 
         closedir(dir);
-
+//  items.sort_by(|a, b| {
+//         match (&a.0[..], &b.0[..]) {
+//             (".", _) => std::cmp::Ordering::Less,
+//             (_, ".") => std::cmp::Ordering::Greater,
+//             ("..", _) if a.0 != "." => std::cmp::Ordering::Less,
+//             (_, "..") if b.0 != "." => std::cmp::Ordering::Greater,
+//             _ => {
+//                 let a_name = if a.0.starts_with('.') && a.0 != "." && a.0 != ".." {
+//                     &a.0[1..]
+//                 } else {
+//                     &a.0
+//                 };
+//                 let b_name = if b.0.starts_with('.') && b.0 != "." && b.0 != ".." {
+//                     &b.0[1..]
+//                 } else {
+//                     &b.0
+//                 };
+//                 a_name.to_lowercase().cmp(&b_name.to_lowercase())
+//             }
+//         }
+//     });
         entries.sort();
         if l_flag {
             let mut total_blocks_512: u64 = 0;
