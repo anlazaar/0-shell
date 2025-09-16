@@ -38,15 +38,27 @@ pub fn cd(args: &[String]) {
     }
 
     let path: String;
-
-    if args.len() == 0 || (args.len() == 1 && args[0] == "~") {
+    if args.len() == 1 && args[0] == "-" {
+        path = env::var("OLDPWD").unwrap_or("/".to_string());
+    } else if args.len() == 0 || (args.len() == 1 && args[0] == "~") {
         path = env::var("HOME").unwrap_or("/".to_string());
     } else {
         path = args[0].clone();
     }
-
+    let old: String;   
+    match env::current_dir() {
+        Ok(path) => old = path.into_os_string().into_string().unwrap_or("".to_string()),
+        Err(e) => {
+            println!("Error: {}", e);
+            return;
+        },
+    };
     if let Err(_) = env::set_current_dir(&path) {
         println!("cd: -- {} -- No such a file or dir", path);
+    } else {
+        unsafe {
+            env::set_var("OLDPWD", &old);
+        }
     }
 }
 
