@@ -45,7 +45,8 @@ Track what’s done, what’s pending, and what’s next.
 
 
 - [x] **ls permissions and types c l b (ls -laF /dev)**
-- [ ] **ls -F (= / @)**
+- [ ] **ls -F (=)**
+- [x] **ls -F (symlinks)**
 - [ ] **ls -l for files and directories -folder names** 
 - [x] **cp mv permission denied error**
 - [ ] **echo newlines**

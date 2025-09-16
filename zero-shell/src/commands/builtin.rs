@@ -193,6 +193,8 @@ fn list_dir(path: &str, a_flag: bool, l_flag: bool, f_flag: bool) {
                             name.push('/');
                         } else if (st.st_mode & 0o111) != 0 {
                             name.push('*');
+                        } else if (st.st_mode & libc::S_IFMT) == libc::S_IFSOCK {
+                            name.push('=');
                         }
                     }
                 }
