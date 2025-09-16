@@ -45,14 +45,16 @@ pub fn cd(args: &[String]) {
     } else {
         path = args[0].clone();
     }
-    let old: String;   
+    let old: String;
     match env::current_dir() {
-        Ok(path) => old = path.into_os_string().into_string().unwrap_or("".to_string()),
+        Ok(path) => {
+            old = path.into_os_string().into_string().unwrap_or("".to_string());
+        }
         Err(e) => {
             println!("Error: {}", e);
             return;
-        },
-    };
+        }
+    }
     if let Err(_) = env::set_current_dir(&path) {
         println!("cd: -- {} -- No such a file or dir", path);
     } else {
@@ -95,8 +97,11 @@ pub fn ls(args: &[String]) {
         paths.push(".".to_string());
     }
 
-    for path in paths {
+    for (i, path) in paths.iter().enumerate() {
         list_dir(&path, a_flag, l_flag, f_flag);
+        if i != paths.len() - 1 {
+            println!();
+        }
     }
 }
 
@@ -149,8 +154,9 @@ fn list_dir(path: &str, a_flag: bool, l_flag: bool, f_flag: bool) {
                 }
             }
         });
-        
+
         if l_flag {
+            println!("{path}:");
             let mut total_blocks_512: u64 = 0;
             for name in &entries {
                 let full_path = format!("{}/{}", path, name);
