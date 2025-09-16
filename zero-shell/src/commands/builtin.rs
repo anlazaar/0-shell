@@ -42,7 +42,7 @@ pub fn cd(args: &[String]) {
     }
 
     if let Err(_) = env::set_current_dir(&path) {
-        println!("cd: -- {} -- No sucha file or dir", path);
+        println!("cd: -- {} -- No such a file or dir", path);
     }
 }
 
@@ -79,7 +79,6 @@ pub fn ls(args: &[String]) {
         paths.push(".".to_string());
     }
 
-    println!("{}, {}, {}",  a_flag, l_flag, f_flag);
     for path in paths {
         list_dir(&path, a_flag, l_flag, f_flag);
     }
