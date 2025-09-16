@@ -49,7 +49,7 @@ Track what’s done, what’s pending, and what’s next.
 - [ ] **ls -l for files and directories -folder names** 
 - [x] **cp mv permission denied error** 
 - [ ] **echo newlines**
-- [ ] **'-' handeling** 
+- [x] **'-' handeling** 
 - [ ] **cd -**
 - [ ] **home as ~**
 - [ ] **'\' in touch and mkdir should escape**
