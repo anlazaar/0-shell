@@ -1,5 +1,4 @@
-use chrono::{ DateTime, Utc };
-use chrono_tz::Africa::Casablanca;
+use chrono::{ DateTime, Local, Utc, Duration };
 use std::ffi::CStr;
 use std::ffi::CString;
 
@@ -23,18 +22,22 @@ pub fn clean_input(input: &str) -> String {
         .to_string()
 }
 
-// Done using chrono.
 pub fn format_time(mtime: i64) -> String {
-    // Build a UTC datetime from epoch seconds
     let dt_utc = DateTime::from_timestamp(mtime, 0).unwrap_or_else(||
         DateTime::<Utc>::from_timestamp(0, 0).unwrap()
     );
 
-    // Convert to local time
-    let local_dt = dt_utc.with_timezone(&Casablanca);
+    let local_dt: DateTime<Local> = dt_utc.with_timezone(&Local);
 
-    // Format like "Feb 27 09:21"
-    local_dt.format("%b %e %H:%M").to_string()
+    let now = Local::now();
+
+    let six_months = Duration::days(180);
+
+    if (now - local_dt).abs() < six_months {
+        local_dt.format("%b %e %H:%M").to_string()
+    } else {
+        local_dt.format("%b %e  %Y").to_string()
+    }
 }
 
 pub fn format_permissions(mode: u32) -> String {

@@ -304,7 +304,7 @@ fn print_long_format(path: &str, name: &str) {
         let extended_attrs = if has_extended_attrs(path) { "+" } else { "" };
 
         println!(
-            "{}{}{} {} {} {} {:>8} {} {}",
+            "{}{}{} {:>2} {:>4} {:>8} {:>13} {:>8}  {:<8}",
             file_type,
             permissions,
             extended_attrs,
@@ -341,7 +341,7 @@ pub fn mkdir(args: &[String]) {
         if Path::new(&name).exists() {
             println!("mkdir: cannot creat directory '{}': Already exists", name);
         } else if let Err(_) = fs::create_dir(&name) {
-            println!("mkdir: cannot creat directory '{}': Permission denied", name);
+            println!("mkdir: cannot creat directory '{}'", name);
         }
     }
 }

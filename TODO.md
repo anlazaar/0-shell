@@ -43,15 +43,14 @@ Track what’s done, what’s pending, and what’s next.
 - [x] **Commit 13: Command chaining (`;`)**
 - [x] **Commit 14: clear + help**
 
-
-- [x] **ls permissions and types c l b (ls -laF /dev)**
+- [x] **ls permissions and types c l b**
 - [x] **ls -F (=)**
 - [x] **ls -F (symlinks)**
-- [x] **ls -l for files and directories -folder names** 
+- [x] **ls -l for files and directories -folder names**
 - [x] **cp mv permission denied error**
 - [ ] **echo newlines**
-- [ ] **'-' handeling**
-- [ ] **cat '-'**
+- [x] **'-' handeling**
+- [x] **cat '-'**
 - [x] **cd -**
 - [x] **home as ~**
 - [x] **'\' in touch and mkdir should escape**
