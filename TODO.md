@@ -56,6 +56,7 @@ Track what’s done, what’s pending, and what’s next.
 - [ ] **'\' in touch and mkdir should escape**
 - [ ] **ls quotes in case of special chars**
 - [x] **ls -l minor and major for disks**
+- [x] **ls -l multi-arg order**
 
 ---
 
