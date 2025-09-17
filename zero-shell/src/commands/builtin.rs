@@ -4,11 +4,10 @@ use crate::helpers::{
 use std::ffi::{CStr, CString};
 use std::fs::{self, File};
 use std::io::{self, BufRead, BufReader, Write};
-use std::os::unix::ffi::OsStrExt;
 use std::path::{Path, PathBuf};
 use std::{env, usize};
 
-use libc::{self, DIR, PATH_MAX, c_char, closedir, lstat, opendir, readdir, readlink, stat};
+use libc::{self, DIR, PATH_MAX, c_char, closedir, lstat, opendir, readdir, readlink, stat, major, minor};
 
 pub fn echo(args: &[String]) {
     if args.len() == 0 {
@@ -213,7 +212,7 @@ fn list_dir(path: &str, a_flag: bool, l_flag: bool, f_flag: bool) {
                         }
                     }
                 }
-                print_long_format(&full_path, &name, pth);
+                print_long_format(&full_path, &name);
             }
         } else {
             for name in entries {
@@ -254,36 +253,59 @@ fn list_dir(path: &str, a_flag: bool, l_flag: bool, f_flag: bool) {
     }
 }
 
-fn print_long_format(path: &str, name: &str, pth: &Path) {
+fn print_long_format(path: &str, name: &str) {
     unsafe {
         let mut st: stat = std::mem::zeroed();
         let c_path = CString::new(path).unwrap();
 
-        if libc::stat(c_path.as_ptr(), &mut st) != 0 {
+        if libc::lstat(c_path.as_ptr(), &mut st) != 0 {
             return;
         }
 
-        let file_type = if (st.st_mode & libc::S_IFMT) == libc::S_IFDIR {
-            'd'
-        } else {
-            '-'
+        let file_type = match st.st_mode & libc::S_IFMT {
+            libc::S_IFREG => '-',
+            libc::S_IFDIR => 'd',
+            libc::S_IFLNK => 'l',
+            libc::S_IFCHR => 'c',
+            libc::S_IFBLK => 'b',
+            libc::S_IFIFO => 'p',
+            libc::S_IFSOCK => 's',
+            _ => '?',
         };
 
         let permissions = format_permissions(st.st_mode);
-        let mut size = String::new();
-        if pth.is_dir() {
-            size = st.st_size.to_string();
-        }
+        
+        // Size or device numbers
+        let size_or_dev = if file_type == 'c' || file_type == 'b' {
+            let maj = major(st.st_rdev);
+            let min = minor(st.st_rdev);
+            format!("{}, {}", maj, min)
+        } else {
+            st.st_size.to_string()
+        };
+
         let mtime = st.st_mtime as i64;
         let datetime = format_time(mtime);
         let username = uid_to_username(st.st_uid);
         let groupname = gid_to_groupname(st.st_gid);
         let nlink = st.st_nlink;
+        let extended_attrs = if has_extended_attrs(path) { "+" } else { "" };
 
         println!(
-            "{}{} {} {} {} {:>8} {} {}",
-            file_type, permissions, nlink, username, groupname, size, datetime, name
+            "{}{}{} {} {} {} {:>8} {} {}",
+            file_type, permissions, extended_attrs, nlink, username, groupname, size_or_dev, datetime, name
         );
+    }
+}
+
+fn has_extended_attrs(path: &str) -> bool {
+    use libc::listxattr;
+    use std::ffi::CString;
+
+    let c_path = CString::new(path).unwrap();
+    unsafe {
+        let size = listxattr(c_path.as_ptr(), std::ptr::null_mut(), 0);
+        size > 0
     }
 }
 
