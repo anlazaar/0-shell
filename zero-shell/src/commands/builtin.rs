@@ -27,26 +27,71 @@ use libc::{
     stat,
 };
 
-// pub fn echo(args: &[String]) {
-//     if args.len() == 0 {
-//         println!();
-//         return;
-//     }
-//     let output = args.join(" ").replace("\\n", "\n");
-//     println!("{} - - - {}", output, output.len());
-// }
+pub fn echo(args: &[String]) {
+    if args.is_empty() {
+        println!();
+        return;
+    }
+
+    let input = args.join(" ");
+    let output = interpret_escapes(&input);
+    println!("{}", output);
+}
+
+// Function to interpret escape sequences like \n, \t, etc.
+fn interpret_escapes(s: &str) -> String {
+    let mut result = String::new();
+    let mut chars = s.chars().peekable();
+
+    while let Some(ch) = chars.next() {
+        if ch == '\\' {
+            match chars.peek() {
+                Some('n') => {
+                    result.push('\n');
+                    chars.next();
+                }
+                Some('\\') => {
+                    result.push('\\');
+                    chars.next();
+                }
+                Some('\"') => {
+                    result.push('\"');
+                    chars.next();
+                }
+                _ => {
+                    result.push(ch);
+                }
+            }
+        } else {
+            result.push(ch);
+        }
+    }
+
+    result
+}
 
 pub fn pwd(_args: &[String]) {
     // using what env stand for >> environment-related which return a Result<PathBuf, std::io::Error>
-    match env::current_dir() {
+    // if  && args[0] == "-" {
+    //     path = env::var("OLDPWD").unwrap_or("/".to_string());
+    // } else if args.len() == 0 || (args.len() == 1 && args[0] == "~") {
+    //     path = env::var("HOME").unwrap_or("/".to_string());
+    // }
+    match env::var("PWD") {
         // Using path.display cause the path is a PathBuf which does not inpliment Display, but has it's own display Method --Helper--
-        Ok(path) => println!("{}", path.display()),
-        Err(e) => println!("Error: {}", e),
+
+        Ok(path) => println!("{}", path),
+        Err(_) => {
+            match env::current_dir() {
+                Ok(path) => println!("{}", path.display()),
+                Err(_) => println!("Error reading current dir"),
+            }
+        }
     }
 }
 
 pub fn cd(args: &[String]) {
-    if args.len() > 1 {
+    if (args.len() > 1 && args[0] != "--") || args.len() > 2 {
         println!("cd: too many arguments");
         return;
     }
@@ -54,26 +99,28 @@ pub fn cd(args: &[String]) {
     let path: String;
     if args.len() == 1 && args[0] == "-" {
         path = env::var("OLDPWD").unwrap_or("/".to_string());
-    } else if args.len() == 0 || (args.len() == 1 && args[0] == "~") {
+    } else if args.len() == 0 || (args.len() == 1 && (args[0] == "~" || args[0] == "--")) {
         path = env::var("HOME").unwrap_or("/".to_string());
+    } else if args[0] == "--" {
+        path = args[1].clone();
     } else {
         path = args[0].clone();
     }
-    let old: String;
+    let mut old = String::new();
     match env::current_dir() {
         Ok(path) => {
             old = path.into_os_string().into_string().unwrap_or("".to_string());
         }
-        Err(e) => {
-            println!("Error: {}", e);
-            return;
-        }
+        Err(_) => {}
     }
     if let Err(_) = env::set_current_dir(&path) {
         println!("cd: -- {} -- No such a file or dir", path);
     } else {
         unsafe {
-            env::set_var("OLDPWD", &old);
+            if env::current_dir().is_ok() {
+                env::set_var("OLDPWD", &old);
+                env::set_var("PWD", env::current_dir().unwrap_or(PathBuf::from(old)));
+            }
         }
     }
 }

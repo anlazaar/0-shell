@@ -1,6 +1,6 @@
 mod builtin;
 
-use builtin::{cd, clear, cp, mv, help, ls, mkdir, pwd, rm, touch, cat};
+use builtin::{ cd, clear, cp, mv, help, ls, mkdir, pwd, rm, touch, echo, cat };
 use std::collections::HashMap;
 
 pub struct CommandExecutor {
@@ -12,8 +12,8 @@ impl CommandExecutor {
         // next this will be mut for insert [command <-> Fn]
         let mut commands: HashMap<String, Box<dyn Fn(&[String])>> = HashMap::new();
 
-        // // echo
-        // commands.insert("echo".to_string(), Box::new(echo));
+        // echo
+        commands.insert("echo".to_string(), Box::new(echo));
         // pwd
         commands.insert("pwd".to_string(), Box::new(pwd));
         // cd

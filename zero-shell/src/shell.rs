@@ -3,6 +3,7 @@ use std::io::{ self, Write };
 use crate::commands::CommandExecutor;
 use crate::helpers::clean_input;
 use crate::utils::parse_command;
+use std::{ env };
 
 pub struct Shell {
     executor: CommandExecutor,
@@ -55,10 +56,21 @@ impl Shell {
                                 .trim()
                                 .to_string();
 
-                            let mut c_quotes = content.matches('"').count() % 2 != 0;
+                            let in_single = content.starts_with("'");
+                            let in_double = content.starts_with('"');
+
+                            let mut c_quotes = if content.starts_with("'") {
+                                content.matches('\'').count() % 2 != 0
+                            } else if content.starts_with("\"") {
+                                content.matches('\"').count() % 2 != 0
+                            } else {
+                                false
+                            };
 
                             while c_quotes {
                                 print!("dquote> ");
+                                content.push('\n');
+
                                 io::stdout().flush().unwrap();
 
                                 let mut to_echo = String::new();
@@ -67,9 +79,14 @@ impl Shell {
                                         break;
                                     }
                                     Ok(_) => {
-                                        content.push('\n');
                                         content.push_str(to_echo.trim());
-                                        c_quotes = content.matches('"').count() % 2 != 0;
+                                        c_quotes = if content.starts_with("'") {
+                                            content.matches('\'').count() % 2 != 0
+                                        } else if content.starts_with("\"") {
+                                            content.matches('\"').count() % 2 != 0
+                                        } else {
+                                            false
+                                        };
                                     }
                                     Err(_) => {
                                         break;
@@ -77,14 +94,24 @@ impl Shell {
                                 }
                             }
 
-                            // Now process final echo content
-                            if content.contains('"') {
-                                // remove all double quotes
-                                let cleaned = content.replace("\"", "");
-                                println!("{}", cleaned);
-                            } else {
-                                println!("{}", content);
+                            let mut cleaned = content;
+                            if in_single {
+                                cleaned = cleaned.replace("\"", "");
+                            } else if in_double {
+                                cleaned = cleaned.replace("'", "");
                             }
+
+                            let args: Vec<String> = cleaned
+                                .split(|c| {
+                                    match c {
+                                        ' ' | '\t' => true,
+                                        _ => false,
+                                    }
+                                })
+                                .map(|s| s.to_string())
+                                .collect();
+
+                            self.executor.execute("echo", &args);
                         } else {
                             self.execute_command(input.as_str());
                         }
@@ -117,17 +144,14 @@ impl Shell {
     }
 
     fn display_current(&self) {
-        let current_dir = std::env
+        let mut current_dir = std::env
             ::current_dir()
-            .map(|path| {
-                if let Some(home) = std::env::var("HOME").ok() {
-                    path.to_string_lossy().replace(&home, "~")
-                } else {
-                    path.to_string_lossy().to_string()
-                }
-            })
-            .unwrap_or("~".to_string());
+            .map(|path| path.to_string_lossy().to_string())
+            .unwrap_or(env::var("PWD").unwrap_or("~".to_string()));
 
+        if let Some(home) = std::env::var("HOME").ok() {
+            current_dir = current_dir.replace(&home, "~");
+        }
         print!("\x1b[32m{}\x1b[0m $ ", current_dir);
         io::stdout().flush().unwrap();
     }

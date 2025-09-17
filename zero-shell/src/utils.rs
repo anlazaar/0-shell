@@ -1,6 +1,10 @@
 pub fn parse_command(input: &str) -> (String, Vec<String>) {
     let input = input.trim();
-    let parts: Vec<&str> = input.split_whitespace().collect();
+    let parts: Vec<&str> = input.split(|c|
+        match c {
+            ' ' | '\t' => true,
+            _ => false,
+        }).collect();
 
     if parts.is_empty() {
         return (String::new(), Vec::new());
