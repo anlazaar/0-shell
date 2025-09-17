@@ -7,7 +7,9 @@ use std::io::{self, BufRead, BufReader, Write};
 use std::path::{Path, PathBuf};
 use std::{env, usize};
 
-use libc::{self, DIR, PATH_MAX, c_char, closedir, lstat, opendir, readdir, readlink, stat, major, minor};
+use libc::{
+    self, DIR, PATH_MAX, c_char, closedir, lstat, major, minor, opendir, readdir, readlink, stat,
+};
 
 pub fn echo(args: &[String]) {
     if args.len() == 0 {
@@ -95,13 +97,35 @@ pub fn ls(args: &[String]) {
     if paths.len() == 0 {
         paths.push(".".to_string());
     }
-
+    sort_entries(&mut paths);
     for (i, path) in paths.iter().enumerate() {
         list_dir(&path, a_flag, l_flag, f_flag);
         if i != paths.len() - 1 {
             println!();
         }
     }
+}
+
+fn sort_entries(entries: &mut Vec<String>) {
+    entries.sort_by(|a, b| match (a.as_str(), b.as_str()) {
+        (".", _) => std::cmp::Ordering::Less,
+        (_, ".") => std::cmp::Ordering::Greater,
+        ("..", _) if a != "." => std::cmp::Ordering::Less,
+        (_, "..") if b != "." => std::cmp::Ordering::Greater,
+        _ => {
+            let a_name = if a.starts_with('.') && a != "." && a != ".." {
+                &a[1..]
+            } else {
+                &a
+            };
+            let b_name = if b.starts_with('.') && b != "." && b != ".." {
+                &b[1..]
+            } else {
+                &b
+            };
+            a_name.to_lowercase().cmp(&b_name.to_lowercase())
+        }
+    });
 }
 
 fn list_dir(path: &str, a_flag: bool, l_flag: bool, f_flag: bool) {
@@ -134,25 +158,7 @@ fn list_dir(path: &str, a_flag: bool, l_flag: bool, f_flag: bool) {
             }
             closedir(dir);
 
-            entries.sort_by(|a, b| match (a.as_str(), b.as_str()) {
-                (".", _) => std::cmp::Ordering::Less,
-                (_, ".") => std::cmp::Ordering::Greater,
-                ("..", _) if a != "." => std::cmp::Ordering::Less,
-                (_, "..") if b != "." => std::cmp::Ordering::Greater,
-                _ => {
-                    let a_name = if a.starts_with('.') && a != "." && a != ".." {
-                        &a[1..]
-                    } else {
-                        &a
-                    };
-                    let b_name = if b.starts_with('.') && b != "." && b != ".." {
-                        &b[1..]
-                    } else {
-                        &b
-                    };
-                    a_name.to_lowercase().cmp(&b_name.to_lowercase())
-                }
-            });
+            sort_entries(&mut entries);
         } else {
             entries.push(path.to_string());
         }
@@ -181,27 +187,25 @@ fn list_dir(path: &str, a_flag: bool, l_flag: bool, f_flag: bool) {
                     full_path = path.to_string();
                 }
 
-                if f_flag {
-                    let mut st: stat = std::mem::zeroed();
-                    let c_full = CString::new(full_path.clone()).unwrap();
+                let mut st: stat = std::mem::zeroed();
+                let c_full = CString::new(full_path.clone()).unwrap();
 
-                    if lstat(c_full.as_ptr(), &mut st) == 0
-                        && (st.st_mode & libc::S_IFMT) == libc::S_IFLNK
-                    {
-                        let mut buf = vec![0u8; PATH_MAX as usize];
-                        let len = readlink(
-                            c_full.as_ptr(),
-                            buf.as_mut_ptr() as *mut c_char,
-                            PATH_MAX as usize,
-                        );
-                        if len >= 0 {
-                            let target_path =
-                                String::from_utf8_lossy(&buf[..len as usize]).to_string();
-                            name.push_str(" -> ");
-                            name.push_str(&target_path);
-                        }
+                if lstat(c_full.as_ptr(), &mut st) == 0
+                    && (st.st_mode & libc::S_IFMT) == libc::S_IFLNK
+                {
+                    let mut buf = vec![0u8; PATH_MAX as usize];
+                    let len = readlink(
+                        c_full.as_ptr(),
+                        buf.as_mut_ptr() as *mut c_char,
+                        PATH_MAX as usize,
+                    );
+                    if len >= 0 {
+                        let target_path = String::from_utf8_lossy(&buf[..len as usize]).to_string();
+                        name.push_str(" -> ");
+                        name.push_str(&target_path);
                     }
-
+                }
+                if f_flag {
                     if stat(c_full.as_ptr(), &mut st) == 0 {
                         if (st.st_mode & libc::S_IFMT) == libc::S_IFDIR {
                             name.push('/');
@@ -274,7 +278,7 @@ fn print_long_format(path: &str, name: &str) {
         };
 
         let permissions = format_permissions(st.st_mode);
-        
+
         // Size or device numbers
         let size_or_dev = if file_type == 'c' || file_type == 'b' {
             let maj = major(st.st_rdev);
@@ -293,7 +297,15 @@ fn print_long_format(path: &str, name: &str) {
 
         println!(
             "{}{}{} {} {} {} {:>8} {} {}",
-            file_type, permissions, extended_attrs, nlink, username, groupname, size_or_dev, datetime, name
+            file_type,
+            permissions,
+            extended_attrs,
+            nlink,
+            username,
+            groupname,
+            size_or_dev,
+            datetime,
+            name
         );
     }
 }
