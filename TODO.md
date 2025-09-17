@@ -45,9 +45,9 @@ Track what’s done, what’s pending, and what’s next.
 
 
 - [x] **ls permissions and types c l b (ls -laF /dev)**
-- [ ] **ls -F (=)**
+- [x] **ls -F (=)**
 - [x] **ls -F (symlinks)**
-- [ ] **ls -l for files and directories -folder names** 
+- [x] **ls -l for files and directories -folder names** 
 - [x] **cp mv permission denied error**
 - [ ] **echo newlines**
 - [ ] **'-' handeling**
@@ -55,7 +55,7 @@ Track what’s done, what’s pending, and what’s next.
 - [x] **home as ~**
 - [ ] **'\' in touch and mkdir should escape**
 - [ ] **ls quotes in case of special chars**
-- [ ] **ls -l minor and major for disks**
+- [x] **ls -l minor and major for disks**
 
 ---
 
