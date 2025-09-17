@@ -11,14 +11,14 @@ use libc::{
     self, DIR, PATH_MAX, c_char, closedir, lstat, major, minor, opendir, readdir, readlink, stat,
 };
 
-pub fn echo(args: &[String]) {
-    if args.len() == 0 {
-        println!();
-        return;
-    }
-    let output = args.join(" ");
-    println!("{}", output);
-}
+// pub fn echo(args: &[String]) {
+//     if args.len() == 0 {
+//         println!();
+//         return;
+//     }
+//     let output = args.join(" ").replace("\\n", "\n");
+//     println!("{} - - - {}", output, output.len());
+// }
 
 pub fn pwd(_args: &[String]) {
     // using what env stand for >> environment-related which return a Result<PathBuf, std::io::Error>
@@ -456,39 +456,35 @@ pub fn mv(args: &[String]) {
 }
 
 pub fn cat(args: &[String]) {
-    if args.is_empty() {
-        // No arguments → behave like shell `cat`, read from stdin
-        let stdin = io::stdin();
-        let mut handle = stdin.lock();
-        let mut buffer = String::new();
-
-        while let Ok(n) = handle.read_line(&mut buffer) {
-            if n == 0 {
-                break; // EOF
+    // Helper to read from any BufRead
+    fn read_from<R: BufRead>(reader: R) {
+        for line in reader.lines() {
+            match line {
+                Ok(content) => println!("{}", content),
+                Err(e) => {
+                    eprintln!("cat: error reading: {}", e);
+                    break;
+                }
             }
-            print!("{}", buffer);
-            buffer.clear();
         }
+    }
+
+    if args.is_empty() {
+        // No arguments → read from stdin
+        let stdin = io::stdin();
+        read_from(stdin.lock());
         return;
     }
 
     for filename in args {
-        let file = File::open(filename);
-        match file {
-            Ok(f) => {
-                let reader = BufReader::new(f);
-                for line in reader.lines() {
-                    match line {
-                        Ok(content) => println!("{}", content),
-                        Err(e) => {
-                            eprintln!("cat: error reading from '{}': {}", filename, e);
-                            break;
-                        }
-                    }
-                }
-            }
-            Err(_) => {
-                eprintln!("cat: {}: No such file or directory", filename);
+        if filename == "-" {
+            // "-" means read from stdin
+            let stdin = io::stdin();
+            read_from(stdin.lock());
+        } else {
+            match File::open(filename) {
+                Ok(f) => read_from(BufReader::new(f)),
+                Err(_) => eprintln!("cat: {}: No such file or directory", filename),
             }
         }
     }

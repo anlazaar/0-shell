@@ -51,6 +51,7 @@ Track what’s done, what’s pending, and what’s next.
 - [x] **cp mv permission denied error**
 - [ ] **echo newlines**
 - [ ] **'-' handeling**
+- [ ] **cat '-'**
 - [x] **cd -**
 - [x] **home as ~**
 - [ ] **'\' in touch and mkdir should escape**
