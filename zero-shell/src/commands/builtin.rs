@@ -1,14 +1,30 @@
 use crate::helpers::{
-    blocks512_for_path, format_permissions, format_time, gid_to_groupname, uid_to_username,
+    blocks512_for_path,
+    format_permissions,
+    format_time,
+    gid_to_groupname,
+    uid_to_username,
+    clean_arg,
 };
-use std::ffi::{CStr, CString};
-use std::fs::{self, File};
-use std::io::{self, BufRead, BufReader, Write};
-use std::path::{Path, PathBuf};
-use std::{env, usize};
+use std::ffi::{ CStr, CString };
+use std::fs::{ self, File };
+use std::io::{ self, BufRead, BufReader, Write };
+use std::path::{ Path, PathBuf };
+use std::{ env, usize };
 
 use libc::{
-    self, DIR, PATH_MAX, c_char, closedir, lstat, major, minor, opendir, readdir, readlink, stat,
+    self,
+    DIR,
+    PATH_MAX,
+    c_char,
+    closedir,
+    lstat,
+    major,
+    minor,
+    opendir,
+    readdir,
+    readlink,
+    stat,
 };
 
 // pub fn echo(args: &[String]) {
@@ -46,16 +62,13 @@ pub fn cd(args: &[String]) {
     let old: String;
     match env::current_dir() {
         Ok(path) => {
-            old = path
-                .into_os_string()
-                .into_string()
-                .unwrap_or("".to_string())
+            old = path.into_os_string().into_string().unwrap_or("".to_string());
         }
         Err(e) => {
             println!("Error: {}", e);
             return;
         }
-    };
+    }
     if let Err(_) = env::set_current_dir(&path) {
         println!("cd: -- {} -- No such a file or dir", path);
     } else {
@@ -107,23 +120,17 @@ pub fn ls(args: &[String]) {
 }
 
 fn sort_entries(entries: &mut Vec<String>) {
-    entries.sort_by(|a, b| match (a.as_str(), b.as_str()) {
-        (".", _) => std::cmp::Ordering::Less,
-        (_, ".") => std::cmp::Ordering::Greater,
-        ("..", _) if a != "." => std::cmp::Ordering::Less,
-        (_, "..") if b != "." => std::cmp::Ordering::Greater,
-        _ => {
-            let a_name = if a.starts_with('.') && a != "." && a != ".." {
-                &a[1..]
-            } else {
-                &a
-            };
-            let b_name = if b.starts_with('.') && b != "." && b != ".." {
-                &b[1..]
-            } else {
-                &b
-            };
-            a_name.to_lowercase().cmp(&b_name.to_lowercase())
+    entries.sort_by(|a, b| {
+        match (a.as_str(), b.as_str()) {
+            (".", _) => std::cmp::Ordering::Less,
+            (_, ".") => std::cmp::Ordering::Greater,
+            ("..", _) if a != "." => std::cmp::Ordering::Less,
+            (_, "..") if b != "." => std::cmp::Ordering::Greater,
+            _ => {
+                let a_name = if a.starts_with('.') && a != "." && a != ".." { &a[1..] } else { &a };
+                let b_name = if b.starts_with('.') && b != "." && b != ".." { &b[1..] } else { &b };
+                a_name.to_lowercase().cmp(&b_name.to_lowercase())
+            }
         }
     });
 }
@@ -190,14 +197,15 @@ fn list_dir(path: &str, a_flag: bool, l_flag: bool, f_flag: bool) {
                 let mut st: stat = std::mem::zeroed();
                 let c_full = CString::new(full_path.clone()).unwrap();
 
-                if lstat(c_full.as_ptr(), &mut st) == 0
-                    && (st.st_mode & libc::S_IFMT) == libc::S_IFLNK
+                if
+                    lstat(c_full.as_ptr(), &mut st) == 0 &&
+                    (st.st_mode & libc::S_IFMT) == libc::S_IFLNK
                 {
                     let mut buf = vec![0u8; PATH_MAX as usize];
                     let len = readlink(
                         c_full.as_ptr(),
                         buf.as_mut_ptr() as *mut c_char,
-                        PATH_MAX as usize,
+                        PATH_MAX as usize
                     );
                     if len >= 0 {
                         let target_path = String::from_utf8_lossy(&buf[..len as usize]).to_string();
@@ -328,10 +336,12 @@ pub fn mkdir(args: &[String]) {
     }
 
     for dir in args {
-        if Path::new(dir).exists() {
-            println!("mkdir: cannot creat directory '{}': Already exists", dir);
-        } else if let Err(_) = fs::create_dir(dir) {
-            println!("mkdir: cannot creat directory '{}': Permission denied", dir);
+        let name = clean_arg(&dir);
+
+        if Path::new(&name).exists() {
+            println!("mkdir: cannot creat directory '{}': Already exists", name);
+        } else if let Err(_) = fs::create_dir(&name) {
+            println!("mkdir: cannot creat directory '{}': Permission denied", name);
         }
     }
 }
@@ -384,7 +394,9 @@ pub fn touch(args: &[String]) {
     }
 
     for filename in args {
-        let path = Path::new(filename);
+        let raw_name = clean_arg(&filename);
+
+        let path = Path::new(&raw_name);
 
         if path.exists() {
             continue;

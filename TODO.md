@@ -54,7 +54,7 @@ Track what’s done, what’s pending, and what’s next.
 - [ ] **cat '-'**
 - [x] **cd -**
 - [x] **home as ~**
-- [ ] **'\' in touch and mkdir should escape**
+- [x] **'\' in touch and mkdir should escape**
 - [ ] **ls quotes in case of special chars**
 - [x] **ls -l minor and major for disks**
 - [x] **ls -l multi-arg order**

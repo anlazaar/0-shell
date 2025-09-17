@@ -91,3 +91,36 @@ pub fn gid_to_groupname(gid: u32) -> String {
         name.to_string_lossy().into_owned()
     }
 }
+
+pub fn clean_arg(arg: &str) -> String {
+    let mut result = String::new();
+    let chars = arg.chars().peekable();
+
+    let in_quote = if
+        (arg.starts_with('"') && arg.ends_with('"')) ||
+        (arg.starts_with('\'') && arg.ends_with('\''))
+    {
+        true
+    } else {
+        false
+    };
+
+    let mut iter = if in_quote { arg[1..arg.len() - 1].chars().peekable() } else { chars };
+
+    while let Some(c) = iter.next() {
+        if c == '\\' {
+            if !in_quote {
+                if let Some(&next) = iter.peek() {
+                    result.push(next);
+                    iter.next();
+                }
+            } else {
+                result.push('\\');
+            }
+        } else {
+            result.push(c);
+        }
+    }
+
+    result
+}
