@@ -1,11 +1,10 @@
 mod commands;
 mod helpers;
 mod shell;
-mod utils;
+mod parser;
 
 use shell::Shell;
 use std::mem::{ zeroed };
-
 
 type SigHandler = extern "C" fn(i32);
 #[cfg(unix)]

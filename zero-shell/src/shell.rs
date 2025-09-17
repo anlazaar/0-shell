@@ -2,7 +2,8 @@ use std::io::{ self, Write };
 
 use crate::commands::CommandExecutor;
 use crate::helpers::clean_input;
-use crate::utils::parse_command;
+
+use crate::parser::{ parse_command, ParseResult };
 use std::{ env };
 
 pub struct Shell {
@@ -49,72 +50,7 @@ impl Shell {
                 Ok(_) => {
                     let input = clean_input(input.trim());
                     if !input.is_empty() {
-                        if input.starts_with("echo") {
-                            let mut content = input
-                                .strip_prefix("echo")
-                                .unwrap()
-                                .trim()
-                                .to_string();
-
-                            let in_single = content.starts_with("'");
-                            let in_double = content.starts_with('"');
-
-                            let mut c_quotes = if content.starts_with("'") {
-                                content.matches('\'').count() % 2 != 0
-                            } else if content.starts_with("\"") {
-                                content.matches('\"').count() % 2 != 0
-                            } else {
-                                false
-                            };
-
-                            while c_quotes {
-                                print!("dquote> ");
-                                content.push('\n');
-
-                                io::stdout().flush().unwrap();
-
-                                let mut to_echo = String::new();
-                                match io::stdin().read_line(&mut to_echo) {
-                                    Ok(0) => {
-                                        break;
-                                    }
-                                    Ok(_) => {
-                                        content.push_str(to_echo.trim());
-                                        c_quotes = if content.starts_with("'") {
-                                            content.matches('\'').count() % 2 != 0
-                                        } else if content.starts_with("\"") {
-                                            content.matches('\"').count() % 2 != 0
-                                        } else {
-                                            false
-                                        };
-                                    }
-                                    Err(_) => {
-                                        break;
-                                    }
-                                }
-                            }
-
-                            let mut cleaned = content;
-                            if in_single {
-                                cleaned = cleaned.replace("\"", "");
-                            } else if in_double {
-                                cleaned = cleaned.replace("'", "");
-                            }
-
-                            let args: Vec<String> = cleaned
-                                .split(|c| {
-                                    match c {
-                                        ' ' | '\t' => true,
-                                        _ => false,
-                                    }
-                                })
-                                .map(|s| s.to_string())
-                                .collect();
-
-                            self.executor.execute("echo", &args);
-                        } else {
-                            self.execute_command(input.as_str());
-                        }
+                        self.handle_input(input);
                     }
                 }
                 Err(error) => {
@@ -124,23 +60,58 @@ impl Shell {
         }
     }
 
-    fn execute_command(&mut self, input: &str) {
-        let commands: Vec<&str> = input.split(";").collect();
-
-        for cmd in commands {
-            let cmd = cmd.trim();
-            if cmd != "" {
-                let (command, args) = parse_command(cmd);
-
-                if command == "exit" {
-                    println!("GoodBy Hoomie!");
-                    self.running = false;
-                    return;
+    fn handle_input(&mut self, mut input: String) {
+        loop {
+            match parse_command(&input) {
+                Ok(ParseResult::Complete(words)) => {
+                    if !words.is_empty() {
+                        self.execute_parsed_command(words);
+                    }
+                    break;
                 }
+                Ok(ParseResult::NeedsContinuation(signal)) => {
+                    print!("{}", signal);
+                    io::stdout().flush().unwrap();
 
-                self.executor.execute(&command, &args);
+                    let mut continuation = String::new();
+                    match io::stdin().read_line(&mut continuation) {
+                        Ok(0) => {
+                            eprintln!("syntax error: unexpected end of file");
+                            break;
+                        }
+                        Ok(_) => {
+                            input.push('\n');
+                            input.push_str(continuation.trim());
+                        }
+                        Err(_) => {
+                            eprintln!("Error reading continuation");
+                            break;
+                        }
+                    }
+                }
+                Err(e) => {
+                    eprintln!("Parse error: {}", e);
+                    break;
+                }
             }
         }
+    }
+
+    fn execute_parsed_command(&mut self, words: Vec<String>) {
+        if words.is_empty() {
+            return;
+        }
+
+        let command = &words[0];
+        let args = &words[1..];
+
+        if command == "exit" {
+            println!("GoodBy Hoomie!");
+            self.running = false;
+            return;
+        }
+
+        self.executor.execute(command, args);
     }
 
     fn display_current(&self) {
