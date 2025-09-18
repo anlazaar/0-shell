@@ -4,7 +4,6 @@ use crate::helpers::{
     format_time,
     gid_to_groupname,
     uid_to_username,
-    clean_arg,
 };
 use std::ffi::{ CStr, CString };
 use std::fs::{ self, File };
@@ -382,13 +381,13 @@ pub fn mkdir(args: &[String]) {
         return;
     }
 
-    for dir in args {
-        let name = clean_arg(&dir);
+    println!("{}", args[0]);
 
-        if Path::new(&name).exists() {
-            println!("mkdir: cannot creat directory '{}': Already exists", name);
-        } else if let Err(_) = fs::create_dir(&name) {
-            println!("mkdir: cannot creat directory '{}'", name);
+    for dir in args {
+        if Path::new(&dir).exists() {
+            println!("mkdir: cannot creat directory '{}': Already exists", dir);
+        } else if let Err(_) = fs::create_dir(&dir) {
+            println!("mkdir: cannot creat directory '{}'", dir);
         }
     }
 }
@@ -441,9 +440,7 @@ pub fn touch(args: &[String]) {
     }
 
     for filename in args {
-        let raw_name = clean_arg(&filename);
-
-        let path = Path::new(&raw_name);
+        let path = Path::new(&filename);
 
         if path.exists() {
             continue;
