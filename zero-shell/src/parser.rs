@@ -1,23 +1,3 @@
-use std::fmt;
-
-#[derive(Debug)]
-#[allow(dead_code)]
-pub enum ParseError {
-    UnterminatedQuote(char),
-    UnexpectedEof,
-    DanglingBackslash,
-}
-
-impl fmt::Display for ParseError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            ParseError::UnterminatedQuote(quote) => write!(f, "Unterminated {} quote", quote),
-            ParseError::UnexpectedEof => write!(f, "Unexpected end of file"),
-            ParseError::DanglingBackslash => write!(f, "Dangling backslash at end of input"),
-        }
-    }
-}
-
 #[derive(Debug, Clone, PartialEq)]
 pub enum ParseResult {
     Complete(Vec<String>),
@@ -47,7 +27,7 @@ impl ShellParser {
         }
     }
 
-    pub fn parse(&mut self, input: &str) -> Result<ParseResult, ParseError> {
+    pub fn parse(&mut self, input: &str) -> Result<ParseResult, ()> {
         self.input = input.chars().collect();
         self.pos = 0;
         self.current_word.clear();
@@ -67,13 +47,13 @@ impl ShellParser {
             }
 
             match ch {
-                '\\' => self.handle_backslash()?,
+                '\\' => self.handle_backslash(),
                 '\'' => self.handle_single_quote(),
                 '"' => self.handle_double_quote(),
                 ' ' | '\t' => self.handle_whitespace(),
                 '#' => {
                     if !self.in_squote && !self.in_dquote {
-                        break; 
+                        break;
                     }
                     self.current_word.push(ch);
                 }
@@ -83,7 +63,6 @@ impl ShellParser {
             self.pos += 1;
         }
 
-        
         if self.in_squote {
             return Ok(ParseResult::NeedsContinuation("squote> ".to_string()));
         }
@@ -101,7 +80,7 @@ impl ShellParser {
         Ok(ParseResult::Complete(self.words.clone()))
     }
 
-    fn handle_backslash(&mut self) -> Result<(), ParseError> {
+    fn handle_backslash(&mut self) {
         if self.in_squote {
             self.current_word.push('\\');
         } else if self.pos + 1 >= self.input.len() {
@@ -109,12 +88,13 @@ impl ShellParser {
         } else {
             let next_char = self.input[self.pos + 1];
             if next_char == '\n' {
-                self.pos += 1; 
+                self.current_word.push('\n');
+                self.pos += 1;
             } else if self.in_dquote {
                 match next_char {
                     '"' | '\\' | '$' | '`' => {
                         self.current_word.push(next_char);
-                        self.pos += 1; 
+                        self.pos += 1;
                     }
                     'n' => {
                         self.current_word.push('n');
@@ -128,10 +108,9 @@ impl ShellParser {
                 }
             } else {
                 self.current_word.push(next_char);
-                self.pos += 1; 
+                self.pos += 1;
             }
         }
-        Ok(())
     }
 
     fn handle_escaped_char(&mut self, ch: char) {
@@ -169,8 +148,7 @@ impl ShellParser {
     }
 }
 
-
-pub fn parse_command(input: &str) -> Result<ParseResult, ParseError> {
+pub fn parse_command(input: &str) -> Result<ParseResult, ()> {
     let mut parser = ShellParser::new();
     parser.parse(input)
 }

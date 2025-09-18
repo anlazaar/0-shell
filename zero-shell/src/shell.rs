@@ -89,8 +89,8 @@ impl Shell {
                         }
                     }
                 }
-                Err(e) => {
-                    eprintln!("Parse error: {}", e);
+                Err(_) => {
+                    eprintln!("Parse error:");
                     break;
                 }
             }
