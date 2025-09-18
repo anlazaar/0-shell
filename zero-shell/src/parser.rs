@@ -97,7 +97,10 @@ impl ShellParser {
                         self.pos += 1;
                     }
                     'n' => {
-                        self.current_word.push('n');
+                        if !self.words.is_empty() && self.words[0] == "echo" {
+                            self.current_word.push('\n');
+                        }
+                        self.current_word.push_str("\\n");
                         self.pos += 1;
                     }
                     _ => {
